@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types'
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const supabase = getSupabaseBrowserClient()
+  const router = useRouter()
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -80,9 +82,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase, fetchProfile])
 
   const signIn = useCallback(async (email: string, password: string): Promise<string | null> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return error?.message ?? null
-  }, [supabase])
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return error.message
+    // onAuthStateChange を待たず、即座にステートを更新
+    setUser(data.user)
+    if (data.user) await fetchProfile(data.user.id)
+    return null
+  }, [supabase, fetchProfile])
 
   const signUp = useCallback(async (email: string, password: string, displayName: string): Promise<string | null> => {
     const { error } = await supabase.auth.signUp({
@@ -97,7 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
-  }, [supabase])
+    router.push('/login')
+  }, [supabase, router])
 
   return (
     <AuthContext.Provider value={{ user, profile, isLoading, signIn, signUp, signOut, refreshProfile }}>

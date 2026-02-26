@@ -26,7 +26,7 @@ export default function LoginPage() {
       setError(err)
       setIsSubmitting(false)
     } else {
-      router.push('/personal')
+      router.replace('/personal')
     }
   }
 

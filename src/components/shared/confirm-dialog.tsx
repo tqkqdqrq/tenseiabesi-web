@@ -10,7 +10,7 @@ interface ConfirmDialogProps {
   description: string
   confirmLabel?: string
   variant?: 'default' | 'destructive'
-  onConfirm: () => void
+  onConfirm: () => void | Promise<void>
 }
 
 export function ConfirmDialog({
@@ -35,8 +35,8 @@ export function ConfirmDialog({
           </Button>
           <Button
             variant={variant}
-            onClick={() => {
-              onConfirm()
+            onClick={async () => {
+              await onConfirm()
               onOpenChange(false)
             }}
           >

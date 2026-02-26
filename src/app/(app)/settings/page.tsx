@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useTheme } from 'next-themes'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -16,7 +15,6 @@ import { toast } from 'sonner'
 export default function SettingsPage() {
   const { user, profile, signOut, refreshProfile } = useAuth()
   const { theme, setTheme } = useTheme()
-  const router = useRouter()
   const supabase = getSupabaseBrowserClient()
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
@@ -42,7 +40,6 @@ export default function SettingsPage() {
 
   const handleLogout = async () => {
     await signOut()
-    router.push('/login')
   }
 
   return (
