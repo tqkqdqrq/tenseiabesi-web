@@ -37,8 +37,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchProfile])
 
   useEffect(() => {
+    let mounted = true
+
+    // 1. Eagerly resolve initial auth state via getSession()
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      if (currentUser) {
+        await fetchProfile(currentUser.id)
+      } else {
+        setProfile(null)
+      }
+      if (mounted) setIsLoading(false)
+    })
+
+    // 2. Subscribe to subsequent auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
+        if (!mounted) return
         const currentUser = session?.user ?? null
         setUser(currentUser)
         if (currentUser) {
@@ -49,7 +66,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false)
       }
     )
-    return () => subscription.unsubscribe()
+
+    // 3. Timeout fallback: force loading to false after 3 seconds
+    const timeout = setTimeout(() => {
+      if (mounted) setIsLoading(false)
+    }, 3000)
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [supabase, fetchProfile])
 
   const signIn = useCallback(async (email: string, password: string): Promise<string | null> => {

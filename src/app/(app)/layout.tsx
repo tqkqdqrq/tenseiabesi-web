@@ -1,17 +1,26 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { AppSidebar } from '@/components/layout/app-sidebar'
-import { Skeleton } from '@/components/ui/skeleton'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isLoading } = useAuth()
+  const { isLoading, user } = useAuth()
+  const router = useRouter()
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login')
+    }
+  }, [isLoading, user, router])
+
+  if (isLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Skeleton className="h-8 w-32" />
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-sm text-muted-foreground">読み込み中...</p>
       </div>
     )
   }
