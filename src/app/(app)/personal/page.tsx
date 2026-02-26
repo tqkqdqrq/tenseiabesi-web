@@ -119,7 +119,7 @@ export default function PersonalPage() {
         title="店舗を削除"
         description={`「${storeHook.selectedStore?.name}」を削除しますか？台データもすべて削除されます。`}
         confirmLabel="削除"
-        onConfirm={() => storeHook.selectedStore && storeHook.deleteStore(storeHook.selectedStore)}
+        onConfirm={() => { if (storeHook.selectedStore) storeHook.deleteStore(storeHook.selectedStore) }}
       />
       <ConfirmDialog
         open={showReset}
@@ -127,7 +127,7 @@ export default function PersonalPage() {
         title="リセット"
         description="すべての台のステータス・初当回数・メモをリセットしますか？"
         confirmLabel="リセット"
-        onConfirm={() => storeHook.selectedStore && machineHook.resetMachines(storeHook.selectedStore.id)}
+        onConfirm={() => { if (storeHook.selectedStore) machineHook.resetMachines(storeHook.selectedStore.id) }}
       />
     </div>
   )

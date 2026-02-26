@@ -259,7 +259,7 @@ export default function GroupDetailPage() {
         title="店舗を削除"
         description={`「${gd.selectedStore?.name}」を削除しますか？台データもすべて削除されます。`}
         confirmLabel="削除"
-        onConfirm={() => gd.selectedStore && gd.deleteStore(gd.selectedStore)}
+        onConfirm={() => { if (gd.selectedStore) gd.deleteStore(gd.selectedStore) }}
       />
       <ConfirmDialog
         open={showReset}
