@@ -17,29 +17,35 @@ export default function PersonalPage() {
   const { user } = useAuth()
   const storeHook = useStores(user?.id)
   const machineHook = useMachines(user?.id)
+  console.log('[PersonalPage] render:', { userId: user?.id, isLoading: storeHook.isLoading, storesCount: storeHook.stores.length, error: storeHook.error })
   const [showAddStore, setShowAddStore] = useState(false)
   const [showDeleteStore, setShowDeleteStore] = useState(false)
   const [showReset, setShowReset] = useState(false)
 
-  useEffect(() => {
-    storeHook.fetchStores()
-  }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const fetchStores = storeHook.fetchStores
+  const fetchMachines = machineHook.fetchMachines
+  const selectedStoreId = storeHook.selectedStore?.id
 
   useEffect(() => {
-    if (storeHook.selectedStore) {
-      machineHook.fetchMachines(storeHook.selectedStore.id)
+    fetchStores()
+  }, [fetchStores])
+
+  useEffect(() => {
+    if (selectedStoreId) {
+      fetchMachines(selectedStoreId)
     }
-  }, [storeHook.selectedStore?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedStoreId, fetchMachines])
 
   const handleRefresh = useCallback(async () => {
-    await storeHook.fetchStores()
-    if (storeHook.selectedStore) {
-      await machineHook.fetchMachines(storeHook.selectedStore.id)
+    await fetchStores()
+    if (selectedStoreId) {
+      await fetchMachines(selectedStoreId)
     }
-  }, [storeHook, machineHook])
+  }, [fetchStores, fetchMachines, selectedStoreId])
 
   const error = storeHook.error || machineHook.error
 
+  console.log('[PersonalPage] isLoading check:', storeHook.isLoading)
   if (storeHook.isLoading) {
     return (
       <div className="p-4 space-y-4">
@@ -50,16 +56,27 @@ export default function PersonalPage() {
     )
   }
 
+  console.log('[PersonalPage] stores check:', storeHook.stores.length)
   if (storeHook.stores.length === 0) {
     return (
       <>
-        <EmptyState
-          icon={Building2}
-          title="店舗がありません"
-          description="まず店舗を追加してください"
-          actionLabel="店舗を追加"
-          onAction={() => setShowAddStore(true)}
-        />
+        {storeHook.error ? (
+          <EmptyState
+            icon={Building2}
+            title="データの読み込みに失敗しました"
+            description={storeHook.error}
+            actionLabel="再試行"
+            onAction={() => fetchStores()}
+          />
+        ) : (
+          <EmptyState
+            icon={Building2}
+            title="店舗がありません"
+            description="まず店舗を追加してください"
+            actionLabel="店舗を追加"
+            onAction={() => setShowAddStore(true)}
+          />
+        )}
         <AddStoreDialog open={showAddStore} onOpenChange={setShowAddStore} onAdd={storeHook.addStore} />
       </>
     )

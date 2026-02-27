@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { Machine, MachineStatus } from '@/lib/types'
 
@@ -9,22 +9,27 @@ export function useMachines(userId: string | undefined) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = getSupabaseBrowserClient()
+  const machinesRef = useRef(machines)
+  machinesRef.current = machines
 
   const fetchMachines = useCallback(async (storeId: string) => {
-    setIsLoading(machines.length === 0)
+    setIsLoading(true)
     setError(null)
-    const { data, error: err } = await supabase
-      .from('machines')
-      .select()
-      .eq('store_id', storeId)
-      .order('sort_order')
-    if (err) {
-      setError('台データの取得に失敗しました')
-    } else if (data) {
-      setMachines(data)
+    try {
+      const { data, error: err } = await supabase
+        .from('machines')
+        .select()
+        .eq('store_id', storeId)
+        .order('sort_order')
+      if (err) {
+        setError('台データの取得に失敗しました')
+      } else if (data) {
+        setMachines(data)
+      }
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
-  }, [supabase, machines.length])
+  }, [supabase])
 
   const addMachine = useCallback(async (storeId: string, number: string) => {
     if (!userId) return
@@ -39,7 +44,7 @@ export function useMachines(userId: string | undefined) {
         number: trimmed,
         status: '未確認',
         first_hit_count: 0,
-        sort_order: machines.length,
+        sort_order: machinesRef.current.length,
         memo: '',
       })
       .select()
@@ -49,7 +54,7 @@ export function useMachines(userId: string | undefined) {
     } else if (data) {
       setMachines(prev => [...prev, data])
     }
-  }, [userId, supabase, machines.length])
+  }, [userId, supabase])
 
   const updateStatus = useCallback(async (machineId: string, newStatus: MachineStatus) => {
     setError(null)
@@ -115,7 +120,7 @@ export function useMachines(userId: string | undefined) {
 
   const moveMachine = useCallback(async (oldIndex: number, newIndex: number) => {
     setError(null)
-    const updated = [...machines]
+    const updated = [...machinesRef.current]
     const [moved] = updated.splice(oldIndex, 1)
     updated.splice(newIndex, 0, moved)
     const reordered = updated.map((m, i) => ({ ...m, sort_order: i }))
@@ -123,7 +128,7 @@ export function useMachines(userId: string | undefined) {
     for (const m of reordered) {
       await supabase.from('machines').update({ sort_order: m.sort_order }).eq('id', m.id)
     }
-  }, [supabase, machines])
+  }, [supabase])
 
   return {
     machines, isLoading, error, setMachines,

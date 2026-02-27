@@ -35,60 +35,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase])
 
   const refreshProfile = useCallback(async () => {
-    if (user) await fetchProfile(user.id)
-  }, [user, fetchProfile])
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (currentUser) await fetchProfile(currentUser.id)
+  }, [supabase, fetchProfile])
 
   useEffect(() => {
     let mounted = true
 
-    // 1. Eagerly resolve initial auth state via getSession()
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      if (currentUser) {
-        await fetchProfile(currentUser.id)
-      } else {
-        setProfile(null)
-      }
-      if (mounted) setIsLoading(false)
-    })
-
-    // 2. Subscribe to subsequent auth changes
+    // onAuthStateChange を唯一の認証状態ソースとして使用
+    // INITIAL_SESSION イベントで初期セッションも取得できるため getSession() は不要
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (event, session) => {
         if (!mounted) return
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
-        if (currentUser) {
-          await fetchProfile(currentUser.id)
+
+        // onAuthStateChange 内部ロック中に DB クエリを呼ぶとデッドロックするため
+        // ここでは setUser のみ実行し、fetchProfile は別の useEffect で行う
+        if (session?.user) {
+          setUser(session.user)
         } else {
+          setUser(null)
           setProfile(null)
         }
-        setIsLoading(false)
+
+        if (mounted) setIsLoading(false)
       }
     )
 
-    // 3. Timeout fallback: force loading to false after 3 seconds
+    // タイムアウトフォールバック: 5秒後にローディングを強制終了
     const timeout = setTimeout(() => {
       if (mounted) setIsLoading(false)
-    }, 3000)
+    }, 5000)
 
     return () => {
       mounted = false
       subscription.unsubscribe()
       clearTimeout(timeout)
     }
-  }, [supabase, fetchProfile])
+  }, [supabase])
+
+  // user が変化した時に fetchProfile を実行（onAuthStateChange 外で DB クエリを行う）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (user) {
+      fetchProfile(user.id)
+    } else {
+      setProfile(null)
+    }
+  }, [user?.id]) // user.id が変わった時だけ実行
 
   const signIn = useCallback(async (email: string, password: string): Promise<string | null> => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return error.message
-    // onAuthStateChange を待たず、即座にステートを更新
+    // setUser により useEffect が fetchProfile を呼ぶ
     setUser(data.user)
-    if (data.user) await fetchProfile(data.user.id)
     return null
-  }, [supabase, fetchProfile])
+  }, [supabase])
 
   const signUp = useCallback(async (email: string, password: string, displayName: string): Promise<string | null> => {
     const { error } = await supabase.auth.signUp({

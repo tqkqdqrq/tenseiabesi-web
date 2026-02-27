@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { GroupStore, GroupMachineWithProfiles, MachineStatus, MachineChange, MachineChangeType, HighlightInfo, Profile } from '@/lib/types'
 
@@ -13,6 +13,10 @@ export function useGroupData(userId: string | undefined) {
   const [highlightedMachines, setHighlightedMachines] = useState<Map<string, HighlightInfo>>(new Map())
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null)
   const supabase = getSupabaseBrowserClient()
+  const storesRef = useRef(stores)
+  storesRef.current = stores
+  const machinesRef = useRef(machines)
+  machinesRef.current = machines
 
   const loadCurrentProfile = useCallback(async () => {
     if (!userId) return null
@@ -22,7 +26,7 @@ export function useGroupData(userId: string | undefined) {
   }, [userId, supabase])
 
   const fetchStores = useCallback(async (groupId: string) => {
-    setIsLoading(stores.length === 0)
+    setIsLoading(storesRef.current.length === 0)
     setError(null)
     const { data, error: err } = await supabase
       .from('group_stores')
@@ -39,19 +43,19 @@ export function useGroupData(userId: string | undefined) {
       })
     }
     setIsLoading(false)
-  }, [supabase, stores.length])
+  }, [supabase])
 
   const addStore = useCallback(async (groupId: string, name: string) => {
     const trimmed = name.trim()
     if (!trimmed) return
-    if (stores.some(s => s.name === trimmed)) {
+    if (storesRef.current.some(s => s.name === trimmed)) {
       setError('その店舗名は既に存在します')
       return
     }
     setError(null)
     const { data, error: err } = await supabase
       .from('group_stores')
-      .insert({ group_id: groupId, name: trimmed, sort_order: stores.length })
+      .insert({ group_id: groupId, name: trimmed, sort_order: storesRef.current.length })
       .select()
       .single()
     if (err) {
@@ -60,7 +64,7 @@ export function useGroupData(userId: string | undefined) {
       setStores(prev => [...prev, data])
       setSelectedStore(data)
     }
-  }, [supabase, stores])
+  }, [supabase])
 
   const deleteStore = useCallback(async (store: GroupStore) => {
     setError(null)
@@ -69,12 +73,12 @@ export function useGroupData(userId: string | undefined) {
       setError('店舗の削除に失敗しました')
     } else {
       setStores(prev => prev.filter(s => s.id !== store.id))
-      setSelectedStore(prev => prev?.id === store.id ? stores.find(s => s.id !== store.id) ?? null : prev)
+      setSelectedStore(prev => prev?.id === store.id ? storesRef.current.find(s => s.id !== store.id) ?? null : prev)
     }
-  }, [supabase, stores])
+  }, [supabase])
 
   const fetchMachines = useCallback(async (groupStoreId: string) => {
-    setIsLoading(machines.length === 0)
+    setIsLoading(machinesRef.current.length === 0)
     setError(null)
     const { data, error: err } = await supabase
       .from('group_machines')
@@ -87,7 +91,7 @@ export function useGroupData(userId: string | undefined) {
       setMachines(data as GroupMachineWithProfiles[])
     }
     setIsLoading(false)
-  }, [supabase, machines.length])
+  }, [supabase])
 
   const addMachine = useCallback(async (groupStoreId: string, groupId: string, number: string): Promise<string | null> => {
     if (!userId) return null
@@ -101,7 +105,7 @@ export function useGroupData(userId: string | undefined) {
         group_id: groupId,
         contributor_id: userId,
         number: trimmed,
-        sort_order: machines.length,
+        sort_order: machinesRef.current.length,
       })
       .select('*, contributor:profiles!group_machines_contributor_id_fkey(*), last_updater:profiles!group_machines_last_updated_by_fkey(*)')
       .single()
@@ -114,7 +118,7 @@ export function useGroupData(userId: string | undefined) {
       return data.id
     }
     return null
-  }, [userId, supabase, machines.length])
+  }, [userId, supabase])
 
   const updateStatus = useCallback(async (machineId: string, newStatus: MachineStatus) => {
     if (!userId) return
@@ -184,7 +188,7 @@ export function useGroupData(userId: string | undefined) {
 
   const moveMachine = useCallback(async (oldIndex: number, newIndex: number) => {
     setError(null)
-    const updated = [...machines]
+    const updated = [...machinesRef.current]
     const [moved] = updated.splice(oldIndex, 1)
     updated.splice(newIndex, 0, moved)
     const reordered = updated.map((m, i) => ({ ...m, sort_order: i }))
@@ -192,7 +196,7 @@ export function useGroupData(userId: string | undefined) {
     for (const m of reordered) {
       await supabase.from('group_machines').update({ sort_order: m.sort_order }).eq('id', m.id)
     }
-  }, [supabase, machines])
+  }, [supabase])
 
   // Broadcast helper
   const notifyChange = useCallback(async (
