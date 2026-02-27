@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { Moon, Sun, LogOut } from 'lucide-react'
+import { Moon, Sun, LogOut, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function SettingsPage() {
@@ -20,6 +20,8 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
   const [isSaving, setIsSaving] = useState(false)
   const [showLogout, setShowLogout] = useState(false)
+  const [secretCode, setSecretCode] = useState('')
+  const [isActivating, setIsActivating] = useState(false)
 
   const handleSaveName = async () => {
     const trimmed = displayName.trim()
@@ -36,6 +38,35 @@ export default function SettingsPage() {
       toast.success('表示名を更新しました')
     }
     setIsSaving(false)
+  }
+
+  const handleActivatePro = async () => {
+    if (!user) return
+    if (secretCode !== 'Tensei20260225') {
+      toast.error('コードが正しくありません')
+      return
+    }
+    setIsActivating(true)
+    try {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ plan: 'pro' })
+        .eq('id', user.id)
+      if (profileError) throw profileError
+
+      const { error: groupsError } = await supabase
+        .from('groups')
+        .update({ max_members: 999 })
+        .eq('leader_id', user.id)
+      if (groupsError) throw groupsError
+
+      await refreshProfile()
+      setSecretCode('')
+      toast.success('Pro版を解放しました！')
+    } catch {
+      toast.error('Pro版の解放に失敗しました')
+    }
+    setIsActivating(false)
   }
 
   const handleLogout = async () => {
@@ -105,6 +136,39 @@ export default function SettingsPage() {
               システム
             </Button>
           </div>
+        </div>
+
+        <Separator />
+
+        {/* Plan */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-muted-foreground">プラン</h2>
+          {profile?.plan === 'pro' ? (
+            <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
+              <Sparkles className="h-4 w-4" />
+              Pro版 解放済み
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="secret-code">ヒミツのコード</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="secret-code"
+                  type="text"
+                  placeholder="コードを入力"
+                  value={secretCode}
+                  onChange={e => setSecretCode(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleActivatePro()}
+                />
+                <Button
+                  onClick={handleActivatePro}
+                  disabled={isActivating || !secretCode.trim()}
+                >
+                  {isActivating ? '処理中...' : '解放'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <Separator />

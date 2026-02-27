@@ -46,7 +46,7 @@ export function useGroups(userId: string | undefined) {
     setIsLoading(false)
   }, [userId, supabase])
 
-  const createGroup = useCallback(async (name: string) => {
+  const createGroup = useCallback(async (name: string, plan?: string) => {
     if (!userId) return
     const trimmed = name.trim()
     if (!trimmed) return
@@ -57,7 +57,12 @@ export function useGroups(userId: string | undefined) {
 
       const { data: newGroup, error: err } = await supabase
         .from('groups')
-        .insert({ name: trimmed, leader_id: userId, invite_code: inviteCode })
+        .insert({
+          name: trimmed,
+          leader_id: userId,
+          invite_code: inviteCode,
+          ...(plan === 'pro' ? { max_members: 999 } : {}),
+        })
         .select()
         .single()
       if (err || !newGroup) throw err

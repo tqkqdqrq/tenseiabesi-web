@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Users, Plus, LogIn, ChevronRight, Trash2, Crown } from 'lucide-react'
 
 export default function GroupsPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const groupsHook = useGroups(user?.id)
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
@@ -93,7 +93,7 @@ export default function GroupsPage() {
         )}
       </div>
 
-      <CreateGroupDialog open={showCreate} onOpenChange={setShowCreate} onCreate={groupsHook.createGroup} />
+      <CreateGroupDialog open={showCreate} onOpenChange={setShowCreate} onCreate={(name: string) => groupsHook.createGroup(name, profile?.plan)} />
       <JoinGroupDialog
         open={showJoin}
         onOpenChange={open => {

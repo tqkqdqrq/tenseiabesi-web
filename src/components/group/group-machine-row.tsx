@@ -18,7 +18,7 @@ interface GroupMachineRowProps {
 }
 
 export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCountChange, onMemoChange, onDelete }: GroupMachineRowProps) {
-  const [countText, setCountText] = useState(String(machine.first_hit_count))
+  const [countText, setCountText] = useState(machine.first_hit_count === 0 ? '' : String(machine.first_hit_count))
   const [memoText, setMemoText] = useState(machine.memo)
   const countRef = useRef<HTMLInputElement>(null)
   const memoRef = useRef<HTMLInputElement>(null)
@@ -26,7 +26,7 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
 
   useEffect(() => {
     if (document.activeElement !== countRef.current) {
-      setCountText(String(machine.first_hit_count))
+      setCountText(machine.first_hit_count === 0 ? '' : String(machine.first_hit_count))
     }
   }, [machine.first_hit_count])
 
@@ -37,6 +37,7 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
   }, [machine.memo])
 
   const commitCount = () => {
+    if (countText === '') return
     const val = parseInt(countText)
     if (!isNaN(val) && val >= 0 && val !== machine.first_hit_count) {
       onCountChange(val)
@@ -71,8 +72,8 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
         </div>
       )}
 
-      <button {...attributes} {...listeners} className="mt-1 cursor-grab text-muted-foreground/50 hover:text-muted-foreground touch-none">
-        <GripVertical className="h-4 w-4" />
+      <button {...attributes} {...listeners} className="mt-1 cursor-grab text-muted-foreground/50 hover:text-muted-foreground touch-none p-1">
+        <GripVertical className="h-6 w-6" />
       </button>
 
       <div className="flex-1 space-y-1.5">
@@ -90,16 +91,46 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
           <div className="flex-1" />
           <div className="flex items-center gap-1">
             <span className="text-xs text-muted-foreground">初当:</span>
-            <input
-              ref={countRef}
-              type="number"
-              min="0"
-              value={countText}
-              onChange={e => setCountText(e.target.value)}
-              onBlur={commitCount}
-              onKeyDown={e => e.key === 'Enter' && commitCount()}
-              className="w-12 rounded-md bg-muted px-2 py-1 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  const current = parseInt(countText) || 0
+                  if (current > 0) {
+                    const next = current - 1
+                    setCountText(next === 0 ? '' : String(next))
+                    onCountChange(next)
+                  }
+                }}
+                className="h-8 w-8 rounded-l-md bg-muted flex items-center justify-center text-lg font-bold active:bg-muted-foreground/20 transition-colors"
+              >
+                −
+              </button>
+              <input
+                ref={countRef}
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={countText}
+                onChange={e => setCountText(e.target.value)}
+                onBlur={commitCount}
+                onKeyDown={e => e.key === 'Enter' && commitCount()}
+                placeholder="0"
+                className="h-8 w-10 bg-muted text-center font-mono text-base outline-none border-x border-background"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const current = parseInt(countText) || 0
+                  const next = current + 1
+                  setCountText(String(next))
+                  onCountChange(next)
+                }}
+                className="h-8 w-8 rounded-r-md bg-muted flex items-center justify-center text-lg font-bold active:bg-muted-foreground/20 transition-colors"
+              >
+                +
+              </button>
+            </div>
           </div>
           <button onClick={onDelete} className="text-muted-foreground/50 hover:text-destructive transition-colors">
             <Trash2 className="h-4 w-4" />
