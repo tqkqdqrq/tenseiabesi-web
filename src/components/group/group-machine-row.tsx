@@ -76,22 +76,46 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
         <GripVertical className="h-6 w-6" />
       </button>
 
-      <div className="flex-1 space-y-1.5">
+      <div className="flex-1 min-w-0 flex flex-col gap-3">
         {/* Contributor + Last updater */}
-        <div className="flex items-center gap-2 text-[10px]">
+        <div className="flex items-center gap-2 text-[10px] -mb-1">
           <span className="font-bold text-muted-foreground">投稿: {machine.contributor?.display_name ?? '不明'}</span>
           {machine.last_updater && (
             <span className="text-orange-500">最終更新: {machine.last_updater.display_name}</span>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-lg font-bold min-w-[50px]">{machine.number}</span>
+        {/* Top Row: Machine Number + Memo + Delete */}
+        <div className="flex items-center gap-2">
+          {/* Machine number */}
+          <span className="font-mono text-xl font-black min-w-[50px] tracking-tight shrink-0">{machine.number}</span>
+
+          {/* Memo */}
+          <input
+            ref={memoRef}
+            value={memoText}
+            onChange={e => setMemoText(e.target.value)}
+            onBlur={commitMemo}
+            onKeyDown={e => e.key === 'Enter' && commitMemo()}
+            placeholder="メモ"
+            className="flex-1 bg-muted/40 hover:bg-muted/60 focus:bg-muted/80 rounded-md px-3 py-1.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/40 transition-colors min-w-0"
+          />
+
+          {/* Delete */}
+          <button onClick={onDelete} className="p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Bottom Row: StatusPicker (Left) | Hit Counter (Right) */}
+        <div className="flex items-end justify-between gap-3">
+          {/* Status */}
           <StatusPicker status={machine.status} onChange={onStatusChange} />
-          <div className="flex-1" />
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">初当:</span>
-            <div className="flex items-center">
+
+          {/* First hit count */}
+          <div className="flex flex-col items-center gap-1.5 bg-muted/20 p-1.5 rounded-xl border border-border/40 shadow-sm grow sm:grow-0 max-w-[180px]">
+            <span className="text-[11px] font-bold text-muted-foreground tracking-wider">初当: {countText || '0'}</span>
+            <div className="flex items-center bg-background rounded-lg shadow-sm border border-border/50 w-full overflow-hidden">
               <button
                 type="button"
                 onClick={() => {
@@ -102,10 +126,11 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
                     onCountChange(next)
                   }
                 }}
-                className="h-8 w-8 rounded-l-md bg-muted flex items-center justify-center text-lg font-bold active:bg-muted-foreground/20 transition-colors"
+                className="h-9 sm:h-10 flex-1 hover:bg-muted flex items-center justify-center text-xl font-medium active:bg-muted/80 transition-colors"
               >
                 −
               </button>
+              <div className="w-[1px] h-6 bg-border/50 shrink-0" />
               <input
                 ref={countRef}
                 type="number"
@@ -115,9 +140,10 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
                 onChange={e => setCountText(e.target.value)}
                 onBlur={commitCount}
                 onKeyDown={e => e.key === 'Enter' && commitCount()}
-                placeholder="0"
-                className="h-8 w-10 bg-muted text-center font-mono text-base outline-none border-x border-background"
+                placeholder="入力"
+                className="h-9 sm:h-10 w-14 sm:w-16 bg-transparent text-center font-mono text-xs sm:text-sm font-semibold outline-none placeholder:text-[10px]"
               />
+              <div className="w-[1px] h-6 bg-border/50 shrink-0" />
               <button
                 type="button"
                 onClick={() => {
@@ -126,27 +152,12 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
                   setCountText(String(next))
                   onCountChange(next)
                 }}
-                className="h-8 w-8 rounded-r-md bg-muted flex items-center justify-center text-lg font-bold active:bg-muted-foreground/20 transition-colors"
+                className="h-9 sm:h-10 flex-1 hover:bg-muted flex items-center justify-center text-xl font-medium active:bg-muted/80 transition-colors"
               >
                 +
               </button>
             </div>
           </div>
-          <button onClick={onDelete} className="text-muted-foreground/50 hover:text-destructive transition-colors">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <input
-            ref={memoRef}
-            value={memoText}
-            onChange={e => setMemoText(e.target.value)}
-            onBlur={commitMemo}
-            onKeyDown={e => e.key === 'Enter' && commitMemo()}
-            placeholder="メモ"
-            className="flex-1 bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/40"
-          />
         </div>
       </div>
     </div>

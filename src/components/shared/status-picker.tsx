@@ -1,8 +1,7 @@
 'use client'
 
-import { MACHINE_STATUSES, STATUS_COLORS, STATUS_DOT_COLORS } from '@/lib/constants'
+import { MACHINE_STATUSES, STATUS_ACTIVE_COLORS, STATUS_LABELS } from '@/lib/constants'
 import type { MachineStatus } from '@/lib/types'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 interface StatusPickerProps {
@@ -12,29 +11,28 @@ interface StatusPickerProps {
 
 export function StatusPicker({ status, onChange }: StatusPickerProps) {
   const current = status as MachineStatus
-  const colors = STATUS_COLORS[current] ?? STATUS_COLORS['未確認']
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-colors cursor-pointer',
-            colors.bg, colors.text
-          )}
-        >
-          <span className={cn('h-2 w-2 rounded-full', STATUS_DOT_COLORS[current] ?? 'bg-gray-400')} />
-          {current}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        {MACHINE_STATUSES.map(s => (
-          <DropdownMenuItem key={s} onClick={() => onChange(s)} className="gap-2">
-            <span className={cn('h-2 w-2 rounded-full', STATUS_DOT_COLORS[s])} />
-            {s}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="grid grid-cols-2 gap-1 p-1 bg-muted/40 rounded-lg shrink-0">
+      {MACHINE_STATUSES.map(s => {
+        const isActive = current === s
+        const colors = STATUS_ACTIVE_COLORS[s]
+        return (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onChange(s)}
+            className={cn(
+              'px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-md transition-all duration-200 cursor-pointer whitespace-nowrap active:scale-95 flex items-center justify-center',
+              isActive
+                ? [colors.bg, colors.text, 'ring-2 ring-offset-1 ring-offset-background shadow-sm', colors.ring]
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            {STATUS_LABELS[s]}
+          </button>
+        )
+      })}
+    </div>
   )
 }
