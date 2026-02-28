@@ -31,8 +31,8 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Unauthenticated users can only access /login and /signup
-  if (!user && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+  // Unauthenticated users: redirect to landing page (root)
+  if (!user && !pathname.startsWith("/login") && !pathname.startsWith("/signup") && !pathname.startsWith("/landing") && pathname !== "/") {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -42,6 +42,13 @@ export async function updateSession(request: NextRequest) {
   if (user && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
     const url = request.nextUrl.clone()
     url.pathname = '/personal'
+    return NextResponse.redirect(url)
+  }
+
+  // Unauthenticated root → landing
+  if (!user && pathname === "/") {
+    const url = request.nextUrl.clone()
+    url.pathname = "/landing"
     return NextResponse.redirect(url)
   }
 
