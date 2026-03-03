@@ -26,13 +26,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex overflow-x-hidden max-w-[100vw]">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:w-56 md:flex-col md:border-r bg-card">
         <AppSidebar />
       </aside>
       {/* Main content */}
-      <main className="flex-1 flex flex-col min-h-screen pb-16 md:pb-0">
+      <main className="flex-1 flex flex-col min-h-screen pb-16 md:pb-0 overflow-x-hidden min-w-0">
         {children}
       </main>
       {/* Mobile bottom nav */}

@@ -58,7 +58,7 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
       ref={setNodeRef}
       style={style}
       className={cn(
-        'relative flex items-start gap-2 rounded-xl p-3 bg-card border shadow-sm transition-all',
+        'relative flex items-start gap-2 rounded-xl p-3 bg-card border shadow-sm transition-all overflow-hidden min-w-0',
         isDragging && 'opacity-50',
         isHighlighted && 'ring-2 ring-blue-500'
       )}
