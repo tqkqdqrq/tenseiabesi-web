@@ -40,6 +40,7 @@ export default function GroupDetailPage() {
   const [headerOpen, setHeaderOpen] = useState(true)
   const [isFirstVisit, setIsFirstVisit] = useState(false)
   const [switcherOpen, setSwitcherOpen] = useState(false)
+  const [storeSwitcherOpen, setStoreSwitcherOpen] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
 
@@ -253,6 +254,41 @@ export default function GroupDetailPage() {
               </div>
             </PopoverContent>
           </Popover>
+          {!headerOpen && gd.stores.length > 0 && (
+            <Popover open={storeSwitcherOpen} onOpenChange={setStoreSwitcherOpen}>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1 min-w-0 hover:opacity-70 transition-opacity">
+                  <span className="text-sm text-muted-foreground truncate max-w-[120px]">
+                    {gd.selectedStore?.name ?? '店舗未選択'}
+                  </span>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="p-0 w-56">
+                <div className="p-2 border-b">
+                  <p className="text-xs font-semibold text-muted-foreground px-2">店舗切替</p>
+                </div>
+                <div className="divide-y max-h-60 overflow-y-auto">
+                  {gd.stores.map(s => {
+                    const isCurrent = s.id === gd.selectedStore?.id
+                    return (
+                      <button
+                        key={s.id}
+                        className={`flex items-center w-full px-3 py-2.5 text-left text-sm ${isCurrent ? 'bg-accent' : 'hover:bg-muted'}`}
+                        onClick={() => {
+                          gd.setSelectedStore(gd.stores.find(st => st.id === s.id) ?? null)
+                          setStoreSwitcherOpen(false)
+                        }}
+                      >
+                        <span className="flex-1 truncate font-medium">{s.name}</span>
+                        {isCurrent && <Check className="h-4 w-4 text-primary shrink-0" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
           <div className="flex-1" />
           <button
             className="flex items-center gap-1 px-1.5 py-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"

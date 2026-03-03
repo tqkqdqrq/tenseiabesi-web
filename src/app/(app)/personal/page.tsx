@@ -10,9 +10,10 @@ import { MachineList } from '@/components/personal/machine-list'
 import { AddStoreDialog } from '@/components/shared/add-store-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { EmptyState } from '@/components/shared/empty-state'
-import { Building2, Database, ChevronDown, ChevronUp, Hash } from 'lucide-react'
+import { Building2, Database, ChevronDown, ChevronUp, Hash, Check } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 
 export default function PersonalPage() {
   const { user } = useAuth()
@@ -24,6 +25,7 @@ export default function PersonalPage() {
   const [showReset, setShowReset] = useState(false)
   const [headerOpen, setHeaderOpen] = useState(true)
   const [isFirstVisit, setIsFirstVisit] = useState(false)
+  const [storeSwitcherOpen, setStoreSwitcherOpen] = useState(false)
 
   const fetchStores = storeHook.fetchStores
   const fetchMachines = machineHook.fetchMachines
@@ -106,19 +108,56 @@ export default function PersonalPage() {
     <div className="flex flex-col h-full">
       {/* Header bar */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-2">
-        <button
-          className="flex items-center justify-between w-full py-1 rounded-md"
-          onClick={toggleHeader}
-        >
-          <span className="text-sm text-muted-foreground truncate">
-            {storeHook.selectedStore?.name ?? '店舗未選択'}
-          </span>
-          <div className="flex items-center gap-1.5 shrink-0 text-muted-foreground">
+        <div className="flex items-center gap-2 py-1">
+          {!headerOpen ? (
+            <Popover open={storeSwitcherOpen} onOpenChange={setStoreSwitcherOpen}>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1 min-w-0 hover:opacity-70 transition-opacity">
+                  <span className="text-sm font-medium truncate">
+                    {storeHook.selectedStore?.name ?? '店舗未選択'}
+                  </span>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="p-0 w-56">
+                <div className="p-2 border-b">
+                  <p className="text-xs font-semibold text-muted-foreground px-2">店舗切替</p>
+                </div>
+                <div className="divide-y max-h-60 overflow-y-auto">
+                  {storeHook.stores.map(s => {
+                    const isCurrent = s.id === storeHook.selectedStore?.id
+                    return (
+                      <button
+                        key={s.id}
+                        className={`flex items-center w-full px-3 py-2.5 text-left text-sm ${isCurrent ? 'bg-accent' : 'hover:bg-muted'}`}
+                        onClick={() => {
+                          storeHook.setSelectedStore(storeHook.stores.find(st => st.id === s.id) ?? null)
+                          setStoreSwitcherOpen(false)
+                        }}
+                      >
+                        <span className="flex-1 truncate font-medium">{s.name}</span>
+                        {isCurrent && <Check className="h-4 w-4 text-primary shrink-0" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <span className="text-sm text-muted-foreground truncate">
+              {storeHook.selectedStore?.name ?? '店舗未選択'}
+            </span>
+          )}
+          <div className="flex-1" />
+          <button
+            className="flex items-center gap-1.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors px-1.5 py-1 rounded-md"
+            onClick={toggleHeader}
+          >
             <Building2 className="h-3.5 w-3.5" />
             <Hash className="h-3.5 w-3.5" />
             {headerOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </div>
-        </button>
+          </button>
+        </div>
         {headerOpen && (
           <>
             <div className="space-y-3 pt-2 pb-1">
