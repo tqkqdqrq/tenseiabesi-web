@@ -120,6 +120,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
   }
