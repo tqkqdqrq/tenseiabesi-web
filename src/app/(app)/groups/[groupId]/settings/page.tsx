@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { ArrowLeft, ArrowRight, Check, Plus, LogIn, Trash2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { ArrowLeft, ArrowRight, Check, Plus, LogIn, Trash2, Pencil } from 'lucide-react'
 import type { SlotGroup } from '@/lib/types'
 
 export default function GroupSettingsPage() {
@@ -28,6 +29,8 @@ export default function GroupSettingsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
   const [showDeleteGroup, setShowDeleteGroup] = useState(false)
+  const [editingName, setEditingName] = useState(false)
+  const [nameText, setNameText] = useState('')
   const supabase = getSupabaseBrowserClient()
 
   useEffect(() => {
@@ -39,6 +42,16 @@ export default function GroupSettingsPage() {
     membersHook.fetchMembers(groupId)
     groupsHook.fetchGroups()
   }, [groupId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSaveName = async () => {
+    const trimmed = nameText.trim()
+    if (!trimmed || trimmed === group?.name) return
+    const { error: err } = await supabase.from('groups').update({ name: trimmed }).eq('id', groupId)
+    if (!err) {
+      setGroup(prev => prev ? { ...prev, name: trimmed } : prev)
+      setEditingName(false)
+    }
+  }
 
   if (!group) {
     return (
@@ -94,7 +107,35 @@ export default function GroupSettingsPage() {
         {/* Group name */}
         <div>
           <h2 className="text-sm font-semibold text-muted-foreground mb-1">グループ名</h2>
-          <p className="text-lg font-bold">{group.name}</p>
+          {editingName ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={nameText}
+                onChange={e => setNameText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveName() }}
+                autoFocus
+                className="text-base"
+              />
+              <Button size="sm" onClick={handleSaveName} disabled={!nameText.trim() || nameText.trim() === group.name}>
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setEditingName(false)}>
+                キャンセル
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="text-lg font-bold">{group.name}</p>
+              {group.leader_id === user?.id && (
+                <button
+                  onClick={() => { setNameText(group.name); setEditingName(true) }}
+                  className="p-1 text-muted-foreground hover:text-foreground transition-colors rounded-md"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <Separator />
