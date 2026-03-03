@@ -6,10 +6,22 @@ import type { Store } from '@/lib/types'
 
 export function useStores(userId: string | undefined) {
   const [stores, setStores] = useState<Store[]>([])
-  const [selectedStore, setSelectedStore] = useState<Store | null>(null)
+  const [selectedStore, _setSelectedStore] = useState<Store | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const supabase = getSupabaseBrowserClient()
+  const setSelectedStore = useCallback((storeOrUpdater: Store | null | ((prev: Store | null) => Store | null)) => {
+    _setSelectedStore(prev => {
+      const next = typeof storeOrUpdater === 'function' ? storeOrUpdater(prev) : storeOrUpdater
+      if (next) {
+        localStorage.setItem('selectedStoreId_personal', next.id)
+      } else {
+        localStorage.removeItem('selectedStoreId_personal')
+      }
+      return next
+    })
+  }, [])
+
   const storesRef = useRef(stores)
   storesRef.current = stores
 
@@ -36,8 +48,10 @@ export function useStores(userId: string | undefined) {
         console.log('[fetchStores] data received:', data.length, 'stores')
         setStores(data)
         setSelectedStore(prev => {
-          if (!prev || !data.find(s => s.id === prev.id)) return data[0] ?? null
-          return prev
+          if (prev && data.find(s => s.id === prev.id)) return prev
+          const savedId = localStorage.getItem('selectedStoreId_personal')
+          const saved = savedId ? data.find(s => s.id === savedId) : null
+          return saved ?? data[0] ?? null
         })
       }
     } finally {

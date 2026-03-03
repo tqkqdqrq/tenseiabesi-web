@@ -6,13 +6,25 @@ import type { GroupStore, GroupMachineWithProfiles, MachineStatus, MachineChange
 
 export function useGroupData(userId: string | undefined) {
   const [stores, setStores] = useState<GroupStore[]>([])
-  const [selectedStore, setSelectedStore] = useState<GroupStore | null>(null)
+  const [selectedStore, _setSelectedStore] = useState<GroupStore | null>(null)
   const [machines, setMachines] = useState<GroupMachineWithProfiles[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [highlightedMachines, setHighlightedMachines] = useState<Map<string, HighlightInfo>>(new Map())
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null)
   const supabase = getSupabaseBrowserClient()
+  const setSelectedStore = useCallback((storeOrUpdater: GroupStore | null | ((prev: GroupStore | null) => GroupStore | null)) => {
+    _setSelectedStore(prev => {
+      const next = typeof storeOrUpdater === 'function' ? storeOrUpdater(prev) : storeOrUpdater
+      if (next) {
+        localStorage.setItem('selectedStoreId_group', next.id)
+      } else {
+        localStorage.removeItem('selectedStoreId_group')
+      }
+      return next
+    })
+  }, [])
+
   const storesRef = useRef(stores)
   storesRef.current = stores
   const machinesRef = useRef(machines)
@@ -37,9 +49,11 @@ export function useGroupData(userId: string | undefined) {
       setError('店舗の取得に失敗しました')
     } else if (data) {
       setStores(data)
-      setSelectedStore(prev => {
-        if (!prev || !data.find(s => s.id === prev.id)) return data[0] ?? null
-        return prev
+      _setSelectedStore(prev => {
+        if (prev && data.find(s => s.id === prev.id)) return prev
+        const savedId = localStorage.getItem('selectedStoreId_group')
+        const saved = savedId ? data.find(s => s.id === savedId) : null
+        return saved ?? data[0] ?? null
       })
     }
     setIsLoading(false)

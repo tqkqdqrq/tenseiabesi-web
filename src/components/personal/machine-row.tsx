@@ -93,7 +93,7 @@ export function MachineRow({ machine, onStatusChange, onCountChange, onMemoChang
             onBlur={commitMemo}
             onKeyDown={e => e.key === 'Enter' && commitMemo()}
             placeholder="メモ"
-            className="flex-1 bg-muted/40 hover:bg-muted/60 focus:bg-muted/80 rounded-md px-3 py-1.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/40 transition-colors min-w-0"
+            className="flex-1 bg-muted/40 hover:bg-muted/60 focus:bg-muted/80 rounded-md px-3 py-1.5 text-base sm:text-xs text-foreground outline-none placeholder:text-muted-foreground/40 transition-colors min-w-0"
           />
 
           {/* Delete */}
@@ -136,7 +136,7 @@ export function MachineRow({ machine, onStatusChange, onCountChange, onMemoChang
                 onBlur={commitCount}
                 onKeyDown={e => e.key === 'Enter' && commitCount()}
                 placeholder="入力"
-                className="h-9 sm:h-10 w-14 sm:w-16 bg-transparent text-center font-mono text-xs sm:text-sm font-semibold outline-none placeholder:text-[10px]"
+                className="h-9 sm:h-10 w-14 sm:w-16 bg-transparent text-center font-mono text-base sm:text-sm font-semibold outline-none placeholder:text-xs sm:placeholder:text-[10px]"
               />
               <div className="w-[1px] h-6 bg-border/50 shrink-0" />
               <button

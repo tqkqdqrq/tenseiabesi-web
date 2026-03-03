@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { User, Users, Settings, Moon, Sun } from 'lucide-react'
@@ -7,15 +8,23 @@ import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
-const navItems = [
-  { href: '/personal', label: '個人モード', icon: User },
-  { href: '/groups', label: 'グループ', icon: Users },
-  { href: '/settings', label: '設定', icon: Settings },
-]
-
 export function AppSidebar() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
+  const [groupHref, setGroupHref] = useState('/groups')
+
+  useEffect(() => {
+    const lastGroupId = localStorage.getItem('lastGroupId')
+    if (lastGroupId) {
+      setGroupHref(`/groups/${lastGroupId}`)
+    }
+  }, [pathname])
+
+  const navItems = [
+    { href: '/personal', label: '個人モード', icon: User },
+    { href: groupHref, label: 'グループ', icon: Users },
+    { href: '/settings', label: '設定', icon: Settings },
+  ]
 
   return (
     <div className="flex flex-col h-full">
@@ -25,10 +34,12 @@ export function AppSidebar() {
       </div>
       <nav className="flex-1 p-2 space-y-1">
         {navItems.map(item => {
-          const isActive = pathname.startsWith(item.href)
+          const isActive = item.icon === Users
+            ? pathname.startsWith('/groups')
+            : pathname.startsWith(item.href)
           return (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',

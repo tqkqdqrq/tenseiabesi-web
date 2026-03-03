@@ -10,8 +10,9 @@ import { MachineList } from '@/components/personal/machine-list'
 import { AddStoreDialog } from '@/components/shared/add-store-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { EmptyState } from '@/components/shared/empty-state'
-import { Building2, Database } from 'lucide-react'
+import { Building2, Database, ChevronDown, ChevronUp, Hash } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 
 export default function PersonalPage() {
   const { user } = useAuth()
@@ -21,10 +22,29 @@ export default function PersonalPage() {
   const [showAddStore, setShowAddStore] = useState(false)
   const [showDeleteStore, setShowDeleteStore] = useState(false)
   const [showReset, setShowReset] = useState(false)
+  const [headerOpen, setHeaderOpen] = useState(true)
+  const [isFirstVisit, setIsFirstVisit] = useState(false)
 
   const fetchStores = storeHook.fetchStores
   const fetchMachines = machineHook.fetchMachines
   const selectedStoreId = storeHook.selectedStore?.id
+
+  useEffect(() => {
+    const saved = localStorage.getItem('headerOpen_personal')
+    if (saved !== null) {
+      setHeaderOpen(saved === 'true')
+    } else {
+      setIsFirstVisit(true)
+    }
+  }, [])
+
+  const toggleHeader = () => {
+    setHeaderOpen(v => {
+      localStorage.setItem('headerOpen_personal', String(!v))
+      if (isFirstVisit) setIsFirstVisit(false)
+      return !v
+    })
+  }
 
   useEffect(() => {
     fetchStores()
@@ -85,19 +105,43 @@ export default function PersonalPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header bar */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3 space-y-3">
-        <StoreBar
-          stores={storeHook.stores}
-          selectedStore={storeHook.selectedStore}
-          onSelect={s => storeHook.setSelectedStore(storeHook.stores.find(st => st.id === s.id) ?? null)}
-          onAddClick={() => setShowAddStore(true)}
-          onDeleteClick={() => setShowDeleteStore(true)}
-        />
-        {storeHook.selectedStore && (
-          <MachineInputBar
-            onAdd={num => machineHook.addMachine(storeHook.selectedStore!.id, num)}
-            onReset={() => setShowReset(true)}
-          />
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-2">
+        <button
+          className="flex items-center justify-between w-full py-1 rounded-md"
+          onClick={toggleHeader}
+        >
+          <span className="text-sm text-muted-foreground truncate">
+            {storeHook.selectedStore?.name ?? '店舗未選択'}
+          </span>
+          <div className="flex items-center gap-1.5 shrink-0 text-muted-foreground">
+            <Building2 className="h-3.5 w-3.5" />
+            <Hash className="h-3.5 w-3.5" />
+            {headerOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </div>
+        </button>
+        {headerOpen && (
+          <>
+            <div className="space-y-3 pt-2 pb-1">
+              <StoreBar
+                stores={storeHook.stores}
+                selectedStore={storeHook.selectedStore}
+                onSelect={s => storeHook.setSelectedStore(storeHook.stores.find(st => st.id === s.id) ?? null)}
+                onAddClick={() => setShowAddStore(true)}
+                onDeleteClick={() => setShowDeleteStore(true)}
+              />
+              {storeHook.selectedStore && (
+                <MachineInputBar
+                  onAdd={num => machineHook.addMachine(storeHook.selectedStore!.id, num)}
+                  onReset={() => setShowReset(true)}
+                />
+              )}
+            </div>
+            {isFirstVisit && (
+              <p className="text-xs text-muted-foreground text-center mt-1">
+                ↑ 上のアイコンをタップすると閉じられます
+              </p>
+            )}
+          </>
         )}
       </div>
 
