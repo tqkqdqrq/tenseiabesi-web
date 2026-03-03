@@ -113,8 +113,10 @@ export default function PersonalPage() {
             <Popover open={storeSwitcherOpen} onOpenChange={setStoreSwitcherOpen}>
               <PopoverTrigger asChild>
                 <button className="flex items-center gap-1 min-w-0 hover:opacity-70 transition-opacity">
-                  <span className="text-sm font-medium truncate">
-                    {storeHook.selectedStore?.name ?? '店舗未選択'}
+                  <span className="text-sm font-medium">
+                    {(storeHook.selectedStore?.name ?? '店舗未選択').length > 10
+                      ? (storeHook.selectedStore?.name ?? '店舗未選択').slice(0, 10) + '…'
+                      : (storeHook.selectedStore?.name ?? '店舗未選択')}
                   </span>
                   <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
                 </button>

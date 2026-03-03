@@ -34,7 +34,7 @@ export function StoreBar({ stores, selectedStore, onSelect, onAddClick, onDelete
                   : 'bg-secondary text-secondary-foreground hover:bg-accent'
               )}
             >
-              {store.name}
+              {store.name.length > 10 ? store.name.slice(0, 10) + '…' : store.name}
             </button>
           ))}
         </div>
