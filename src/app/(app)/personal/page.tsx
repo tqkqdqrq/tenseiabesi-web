@@ -31,6 +31,13 @@ export default function PersonalPage() {
   const fetchMachines = machineHook.fetchMachines
   const selectedStoreId = storeHook.selectedStore?.id
 
+  // Blur any focused element on mount to prevent iOS Safari viewport shift
+  useEffect(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+  }, [])
+
   useEffect(() => {
     const saved = localStorage.getItem('headerOpen_personal')
     if (saved !== null) {

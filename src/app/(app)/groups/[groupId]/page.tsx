@@ -48,6 +48,13 @@ export default function GroupDetailPage() {
   const broadcastChannelRef = useRef<RealtimeChannel | null>(null)
   const pgChannelRef = useRef<RealtimeChannel | null>(null)
 
+  // Blur any focused element on mount to prevent iOS Safari viewport shift
+  useEffect(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+  }, [])
+
   // Save last opened group to localStorage
   useEffect(() => {
     localStorage.setItem('lastGroupId', groupId)
