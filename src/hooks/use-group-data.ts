@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { markResetDone } from '@/lib/auto-reset'
 import type { GroupStore, GroupMachineWithProfiles, MachineStatus, MachineChange, MachineChangeType, HighlightInfo, Profile } from '@/lib/types'
 
 export function useGroupData(userId: string | undefined) {
@@ -197,6 +198,7 @@ export function useGroupData(userId: string | undefined) {
       setError('リセットに失敗しました')
     } else {
       setMachines(prev => prev.map(m => ({ ...m, status: '未確認', first_hit_count: 0, memo: '' })))
+      markResetDone(groupStoreId)
     }
   }, [supabase])
 

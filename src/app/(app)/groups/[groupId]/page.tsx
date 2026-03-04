@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useGroupData } from '@/hooks/use-group-data'
+import { shouldAutoReset } from '@/lib/auto-reset'
+import { toast } from 'sonner'
 import { usePresence } from '@/hooks/use-presence'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { useGroups } from '@/hooks/use-groups'
@@ -100,6 +102,21 @@ export default function GroupDetailPage() {
       gd.fetchMachines(gd.selectedStore.id)
     }
   }, [gd.selectedStore?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 日付変更時の自動リセット
+  const autoResetCheckedRef = useRef<string | null>(null)
+  useEffect(() => {
+    const storeId = gd.selectedStore?.id
+    if (!storeId || gd.machines.length === 0) return
+    if (autoResetCheckedRef.current === storeId) return
+    autoResetCheckedRef.current = storeId
+    if (shouldAutoReset(storeId)) {
+      gd.resetMachines(storeId).then(() => {
+        broadcast(undefined, 'reset')
+        toast('日付が変わったためリセットしました')
+      })
+    }
+  }, [gd.selectedStore?.id, gd.machines.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Postgres Changes subscription
   useEffect(() => {

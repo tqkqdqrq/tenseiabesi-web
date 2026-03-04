@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { markResetDone } from '@/lib/auto-reset'
 import type { Machine, MachineStatus } from '@/lib/types'
 
 export function useMachines(userId: string | undefined) {
@@ -115,6 +116,7 @@ export function useMachines(userId: string | undefined) {
       setError('リセットに失敗しました')
     } else {
       setMachines(prev => prev.map(m => ({ ...m, status: '未確認', first_hit_count: 0, memo: '' })))
+      markResetDone(storeId)
     }
   }, [supabase])
 

@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useStores } from '@/hooks/use-stores'
 import { useMachines } from '@/hooks/use-machines'
+import { shouldAutoReset, markResetDone } from '@/lib/auto-reset'
+import { toast } from 'sonner'
 import { StoreBar } from '@/components/personal/store-bar'
 import { MachineInputBar } from '@/components/personal/machine-input-bar'
 import { MachineList } from '@/components/personal/machine-list'
@@ -64,6 +66,19 @@ export default function PersonalPage() {
       fetchMachines(selectedStoreId)
     }
   }, [selectedStoreId, fetchMachines])
+
+  // 日付変更時の自動リセット
+  const autoResetCheckedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!selectedStoreId || machineHook.machines.length === 0) return
+    if (autoResetCheckedRef.current === selectedStoreId) return
+    autoResetCheckedRef.current = selectedStoreId
+    if (shouldAutoReset(selectedStoreId)) {
+      machineHook.resetMachines(selectedStoreId).then(() => {
+        toast('日付が変わったためリセットしました')
+      })
+    }
+  }, [selectedStoreId, machineHook.machines.length, machineHook.resetMachines])
 
   const handleRefresh = useCallback(async () => {
     await fetchStores()
