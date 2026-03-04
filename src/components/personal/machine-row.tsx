@@ -67,7 +67,7 @@ export function MachineRow({ machine, onStatusChange, onCountChange, onMemoChang
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-start gap-2 rounded-xl p-3 bg-card border shadow-sm overflow-hidden min-w-0',
+        'flex items-start gap-2 rounded-xl p-3 bg-card border shadow-sm overflow-hidden min-w-0 select-none [&_input]:select-auto',
         isDragging && 'opacity-50'
       )}
     >
