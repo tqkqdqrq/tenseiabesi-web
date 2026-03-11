@@ -81,7 +81,7 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
         <div className="flex items-center gap-2 text-[10px] -mb-1">
           <span className="font-bold text-muted-foreground">投稿: {machine.contributor?.display_name ?? '不明'}</span>
           {machine.last_updater && (
-            <span className="text-orange-500">最終更新: {machine.last_updater.display_name}</span>
+            <span className="text-orange-500">最終更新: {machine.last_updater.display_name}{machine.updated_at && (() => { const d = new Date(machine.updated_at); return ` ${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` })()}</span>
           )}
         </div>
 

@@ -144,10 +144,10 @@ export function useGroupData(userId: string | undefined) {
     if (err) {
       setError('状態の更新に失敗しました')
     } else {
-      setMachines(prev => prev.map(m => m.id === machineId ? { ...m, status: newStatus, last_updated_by: userId } : m))
+      setMachines(prev => prev.map(m => m.id === machineId ? { ...m, status: newStatus, last_updated_by: userId, updated_at: new Date().toISOString(), last_updater: currentProfile } : m))
     }
     return machineId
-  }, [userId, supabase])
+  }, [userId, supabase, currentProfile])
 
   const updateFirstHitCount = useCallback(async (machineId: string, count: number) => {
     if (!userId) return
@@ -159,10 +159,10 @@ export function useGroupData(userId: string | undefined) {
     if (err) {
       setError('初当り回数の更新に失敗しました')
     } else {
-      setMachines(prev => prev.map(m => m.id === machineId ? { ...m, first_hit_count: count, last_updated_by: userId } : m))
+      setMachines(prev => prev.map(m => m.id === machineId ? { ...m, first_hit_count: count, last_updated_by: userId, updated_at: new Date().toISOString(), last_updater: currentProfile } : m))
     }
     return machineId
-  }, [userId, supabase])
+  }, [userId, supabase, currentProfile])
 
   const updateMemo = useCallback(async (machineId: string, memo: string) => {
     if (!userId) return
@@ -174,10 +174,10 @@ export function useGroupData(userId: string | undefined) {
     if (err) {
       setError('メモの更新に失敗しました')
     } else {
-      setMachines(prev => prev.map(m => m.id === machineId ? { ...m, memo, last_updated_by: userId } : m))
+      setMachines(prev => prev.map(m => m.id === machineId ? { ...m, memo, last_updated_by: userId, updated_at: new Date().toISOString(), last_updater: currentProfile } : m))
     }
     return machineId
-  }, [userId, supabase])
+  }, [userId, supabase, currentProfile])
 
   const deleteMachine = useCallback(async (machineId: string) => {
     setError(null)
