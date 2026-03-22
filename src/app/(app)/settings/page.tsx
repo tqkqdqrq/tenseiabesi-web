@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Moon, Sun, LogOut, Sparkles, User, Users } from 'lucide-react'
+import { Moon, Sun, LogOut, Sparkles, User, Users, MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function SettingsPage() {
@@ -24,6 +24,7 @@ export default function SettingsPage() {
   const [secretCode, setSecretCode] = useState('')
   const [isActivating, setIsActivating] = useState(false)
   const [showModeHelp, setShowModeHelp] = useState(false)
+  const [showUnlinkLine, setShowUnlinkLine] = useState(false)
 
   useEffect(() => {
     const seen = localStorage.getItem('modeHelpSeen')
@@ -31,6 +32,39 @@ export default function SettingsPage() {
       setShowModeHelp(true)
     }
   }, [])
+
+  // LINE連携コールバック結果の処理
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const lineResult = params.get('line')
+    if (lineResult === 'success') {
+      refreshProfile()
+      toast.success('LINE連携が完了しました')
+      window.history.replaceState({}, '', '/settings')
+    } else if (lineResult === 'error') {
+      toast.error('LINE連携に失敗しました')
+      window.history.replaceState({}, '', '/settings')
+    }
+  }, [refreshProfile])
+
+  const handleLinkLine = () => {
+    if (!user) return
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: process.env.NEXT_PUBLIC_LINE_LOGIN_CHANNEL_ID!,
+      redirect_uri: `${window.location.origin}/api/line/callback`,
+      state: user.id,
+      scope: 'profile openid',
+    })
+    window.location.href = `https://access.line.me/oauth2/v2.1/authorize?${params}`
+  }
+
+  const handleUnlinkLine = async () => {
+    if (!user) return
+    await supabase.from('profiles').update({ line_user_id: null }).eq('id', user.id)
+    await refreshProfile()
+    toast.success('LINE連携を解除しました')
+  }
 
   const handleSaveName = async () => {
     const trimmed = displayName.trim()
@@ -113,6 +147,32 @@ export default function SettingsPage() {
             <Label>メールアドレス</Label>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
+        </div>
+
+        <Separator />
+
+        {/* LINE */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-muted-foreground">LINE連携</h2>
+          {profile?.line_user_id ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
+                <MessageCircle className="h-4 w-4" />
+                LINE連携済み
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowUnlinkLine(true)}>
+                連携を解除
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">LINEと連携すると、グループメンバーからの台通知をLINEで受け取れます。</p>
+              <Button onClick={handleLinkLine} className="bg-[#06C755] hover:bg-[#05b34d] text-white">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                LINEと連携する
+              </Button>
+            </div>
+          )}
         </div>
 
         <Separator />
@@ -224,6 +284,14 @@ export default function SettingsPage() {
         </Button>
       </div>
 
+      <ConfirmDialog
+        open={showUnlinkLine}
+        onOpenChange={setShowUnlinkLine}
+        title="LINE連携解除"
+        description="LINE連携を解除しますか？グループからのLINE通知が届かなくなります。"
+        confirmLabel="解除"
+        onConfirm={handleUnlinkLine}
+      />
       <ConfirmDialog
         open={showLogout}
         onOpenChange={setShowLogout}

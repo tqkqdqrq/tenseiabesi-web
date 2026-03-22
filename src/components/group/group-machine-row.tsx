@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { GripVertical, Trash2 } from 'lucide-react'
+import { MessageCircle, GripVertical, Trash2 } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { StatusPicker } from '@/components/shared/status-picker'
@@ -15,9 +15,10 @@ interface GroupMachineRowProps {
   onCountChange: (count: number) => void
   onMemoChange: (memo: string) => void
   onDelete: () => void
+  onNotify?: () => void
 }
 
-export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCountChange, onMemoChange, onDelete }: GroupMachineRowProps) {
+export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCountChange, onMemoChange, onDelete, onNotify }: GroupMachineRowProps) {
   const [countText, setCountText] = useState(machine.first_hit_count === 0 ? '' : String(machine.first_hit_count))
   const [memoText, setMemoText] = useState(machine.memo)
   const countRef = useRef<HTMLInputElement>(null)
@@ -100,6 +101,13 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
             placeholder="メモ"
             className="flex-1 bg-muted/40 hover:bg-muted/60 focus:bg-muted/80 rounded-md px-3 py-1.5 text-base sm:text-xs text-foreground outline-none placeholder:text-muted-foreground/40 transition-colors min-w-0"
           />
+
+          {/* Notify */}
+          {onNotify && (
+            <button onClick={onNotify} className="p-1.5 text-[#06C755] hover:bg-[#06C755]/10 rounded-md transition-colors shrink-0">
+              <MessageCircle className="h-4 w-4" />
+            </button>
+          )}
 
           {/* Delete */}
           <button onClick={onDelete} className="p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0">

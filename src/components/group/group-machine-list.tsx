@@ -14,11 +14,12 @@ interface GroupMachineListProps {
   onMemoChange: (id: string, memo: string) => void
   onDelete: (id: string) => void
   onReorder: (oldIndex: number, newIndex: number) => void
+  onNotify?: (machineNumber: string) => void
 }
 
 export function GroupMachineList({
   machines, highlightedMachines,
-  onStatusChange, onCountChange, onMemoChange, onDelete, onReorder,
+  onStatusChange, onCountChange, onMemoChange, onDelete, onReorder, onNotify,
 }: GroupMachineListProps) {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -48,6 +49,7 @@ export function GroupMachineList({
               onCountChange={c => onCountChange(machine.id, c)}
               onMemoChange={m => onMemoChange(machine.id, m)}
               onDelete={() => onDelete(machine.id)}
+              onNotify={onNotify ? () => onNotify(machine.number) : undefined}
             />
           ))}
         </div>

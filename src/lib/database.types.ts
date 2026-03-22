@@ -160,6 +160,27 @@ export type Database = {
           },
         ]
       }
+      line_notifications: {
+        Row: {
+          id: string
+          user_id: string
+          group_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          group_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          group_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           created_at: string
@@ -257,6 +278,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          line_user_id: string | null
           mode: string
           plan: string
           updated_at: string
@@ -265,6 +287,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id: string
+          line_user_id?: string | null
           mode?: string
           plan?: string
           updated_at?: string
@@ -273,6 +296,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          line_user_id?: string | null
           mode?: string
           plan?: string
           updated_at?: string
