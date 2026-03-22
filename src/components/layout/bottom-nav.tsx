@@ -5,9 +5,11 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { User, Users, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/components/providers/auth-provider'
 
 export function BottomNav() {
   const pathname = usePathname()
+  const { profile } = useAuth()
   const [groupHref, setGroupHref] = useState('/groups')
   const [visible, setVisible] = useState(true)
   const touchStartY = useRef(0)
@@ -54,11 +56,13 @@ export function BottomNav() {
     }
   }, [handleTouchStart, handleTouchMove, handleWheel])
 
-  const navItems = [
-    { href: '/personal', label: '個人', icon: User },
-    { href: groupHref, label: 'グループ', icon: Users },
-    { href: '/settings', label: '設定', icon: Settings },
+  const allNavItems = [
+    { href: '/personal', label: '個人', icon: User, mode: 'personal' as const },
+    { href: groupHref, label: 'グループ', icon: Users, mode: 'group' as const },
+    { href: '/settings', label: '設定', icon: Settings, mode: null },
   ]
+
+  const navItems = allNavItems.filter(item => item.mode === null || item.mode === profile?.mode)
 
   return (
     <nav

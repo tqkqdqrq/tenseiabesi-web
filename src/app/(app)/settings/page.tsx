@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useTheme } from 'next-themes'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { Moon, Sun, LogOut, Sparkles } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Moon, Sun, LogOut, Sparkles, User, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function SettingsPage() {
@@ -22,6 +23,14 @@ export default function SettingsPage() {
   const [showLogout, setShowLogout] = useState(false)
   const [secretCode, setSecretCode] = useState('')
   const [isActivating, setIsActivating] = useState(false)
+  const [showModeHelp, setShowModeHelp] = useState(false)
+
+  useEffect(() => {
+    const seen = localStorage.getItem('modeHelpSeen')
+    if (!seen) {
+      setShowModeHelp(true)
+    }
+  }, [])
 
   const handleSaveName = async () => {
     const trimmed = displayName.trim()
@@ -140,6 +149,41 @@ export default function SettingsPage() {
 
         <Separator />
 
+        {/* Mode */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-muted-foreground">使用モード</h2>
+          <div className="flex gap-2">
+            <Button
+              variant={profile?.mode === 'personal' ? 'default' : 'outline'}
+              size="sm"
+              onClick={async () => {
+                if (!user || profile?.mode === 'personal') return
+                await supabase.from('profiles').update({ mode: 'personal' }).eq('id', user.id)
+                await refreshProfile()
+                toast.success('個人モードに切り替えました')
+              }}
+            >
+              <User className="h-4 w-4 mr-1" />
+              個人
+            </Button>
+            <Button
+              variant={profile?.mode === 'group' ? 'default' : 'outline'}
+              size="sm"
+              onClick={async () => {
+                if (!user || profile?.mode === 'group') return
+                await supabase.from('profiles').update({ mode: 'group' }).eq('id', user.id)
+                await refreshProfile()
+                toast.success('グループモードに切り替えました')
+              }}
+            >
+              <Users className="h-4 w-4 mr-1" />
+              グループ
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Plan */}
         <div className="space-y-4">
           <h2 className="text-sm font-semibold text-muted-foreground">プラン</h2>
@@ -188,6 +232,36 @@ export default function SettingsPage() {
         confirmLabel="ログアウト"
         onConfirm={handleLogout}
       />
+
+      <Dialog open={showModeHelp} onOpenChange={setShowModeHelp}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>使用モードについて</DialogTitle>
+            <DialogDescription>
+              「個人モード」と「グループモード」を切り替えることで、使わない機能をナビから非表示にできます。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start gap-2">
+              <User className="h-4 w-4 mt-0.5 shrink-0" />
+              <p><span className="font-medium">個人モード</span> — 自分だけの台データを管理します。グループ機能は非表示になります。</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <Users className="h-4 w-4 mt-0.5 shrink-0" />
+              <p><span className="font-medium">グループモード</span> — チームで台データを共有します。個人機能は非表示になります。</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">この設定はいつでも変更できます。</p>
+          <DialogFooter>
+            <Button onClick={() => {
+              localStorage.setItem('modeHelpSeen', '1')
+              setShowModeHelp(false)
+            }}>
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

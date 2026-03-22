@@ -7,10 +7,12 @@ import { User, Users, Settings, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/components/providers/auth-provider'
 
 export function AppSidebar() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
+  const { profile } = useAuth()
   const [groupHref, setGroupHref] = useState('/groups')
 
   useEffect(() => {
@@ -20,11 +22,13 @@ export function AppSidebar() {
     }
   }, [pathname])
 
-  const navItems = [
-    { href: '/personal', label: '個人モード', icon: User },
-    { href: groupHref, label: 'グループ', icon: Users },
-    { href: '/settings', label: '設定', icon: Settings },
+  const allNavItems = [
+    { href: '/personal', label: '個人モード', icon: User, mode: 'personal' as const },
+    { href: groupHref, label: 'グループ', icon: Users, mode: 'group' as const },
+    { href: '/settings', label: '設定', icon: Settings, mode: null },
   ]
+
+  const navItems = allNavItems.filter(item => item.mode === null || item.mode === profile?.mode)
 
   return (
     <div className="flex flex-col h-full">

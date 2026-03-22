@@ -1,20 +1,31 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isLoading, user } = useAuth()
+  const { isLoading, user, profile } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/login')
     }
   }, [isLoading, user, router])
+
+  // モードに応じたリダイレクト
+  useEffect(() => {
+    if (!profile?.mode || pathname === '/settings') return
+    if (profile.mode === 'group' && pathname.startsWith('/personal')) {
+      router.replace('/groups')
+    } else if (profile.mode === 'personal' && pathname.startsWith('/groups')) {
+      router.replace('/personal')
+    }
+  }, [profile?.mode, pathname, router])
 
   if (isLoading || !user) {
     return (

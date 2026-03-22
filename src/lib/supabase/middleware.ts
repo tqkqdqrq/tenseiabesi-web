@@ -25,9 +25,20 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // タイムアウト付きでauth.getUser()を呼ぶ（5秒でタイムアウト）
+  let user = null
+  try {
+    const result = await Promise.race([
+      supabase.auth.getUser(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Auth timeout')), 5000)
+      ),
+    ])
+    user = result.data.user
+  } catch {
+    // タイムアウトまたはエラー → 未認証として続行
+    user = null
+  }
 
   const pathname = request.nextUrl.pathname
 
