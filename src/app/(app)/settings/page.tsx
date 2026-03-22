@@ -33,6 +33,13 @@ export default function SettingsPage() {
     }
   }, [])
 
+  // profileが後から取得された場合にdisplayNameを同期
+  useEffect(() => {
+    if (profile?.display_name) {
+      setDisplayName(profile.display_name)
+    }
+  }, [profile?.display_name])
+
   // LINE連携コールバック結果の処理
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
