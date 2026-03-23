@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     // グループメンバーのLINE IDを取得
     const { data: members } = await adminSupabase
       .from('group_members')
-      .select('user_id, profiles:user_id(line_user_id)')
+      .select('user_id, profiles:user_id(line_user_id, line_followed)')
       .eq('group_id', groupId)
       .eq('status', 'approved')
       // テスト時は自分にも送信するため、neqをコメントアウト
@@ -82,8 +82,8 @@ export async function POST(request: NextRequest) {
     // LINE user IDを収集（連携済みのメンバーのみ）
     const lineUserIds = members
       .map(m => {
-        const profile = m.profiles as unknown as { line_user_id: string | null } | null
-        return profile?.line_user_id
+        const profile = m.profiles as unknown as { line_user_id: string | null; line_followed: boolean } | null
+        return profile?.line_user_id && profile?.line_followed ? profile.line_user_id : null
       })
       .filter((id): id is string => !!id)
 

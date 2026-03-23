@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Moon, Sun, LogOut, Sparkles, User, Users, MessageCircle } from 'lucide-react'
+import { Moon, Sun, LogOut, Sparkles, User, Users, MessageCircle, AlertTriangle, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function SettingsPage() {
@@ -25,6 +25,7 @@ export default function SettingsPage() {
   const [isActivating, setIsActivating] = useState(false)
   const [showModeHelp, setShowModeHelp] = useState(false)
   const [showUnlinkLine, setShowUnlinkLine] = useState(false)
+  const [isCheckingFollow, setIsCheckingFollow] = useState(false)
 
   useEffect(() => {
     const seen = localStorage.getItem('modeHelpSeen')
@@ -48,6 +49,10 @@ export default function SettingsPage() {
       refreshProfile()
       toast.success('LINE連携が完了しました')
       window.history.replaceState({}, '', '/settings')
+    } else if (lineResult === 'need_follow') {
+      refreshProfile()
+      toast.warning('LINE連携しました。公式アカウントの友だち追加も行ってください。')
+      window.history.replaceState({}, '', '/settings')
     } else if (lineResult === 'error') {
       toast.error('LINE連携に失敗しました')
       window.history.replaceState({}, '', '/settings')
@@ -62,15 +67,33 @@ export default function SettingsPage() {
       redirect_uri: `${window.location.origin}/api/line/callback`,
       state: user.id,
       scope: 'profile openid',
+      bot_prompt: 'aggressive',
     })
     window.location.href = `https://access.line.me/oauth2/v2.1/authorize?${params}`
   }
 
   const handleUnlinkLine = async () => {
     if (!user) return
-    await supabase.from('profiles').update({ line_user_id: null }).eq('id', user.id)
+    await supabase.from('profiles').update({ line_user_id: null, line_followed: false }).eq('id', user.id)
     await refreshProfile()
     toast.success('LINE連携を解除しました')
+  }
+
+  const handleCheckFollow = async () => {
+    setIsCheckingFollow(true)
+    try {
+      const res = await fetch('/api/line/check-follow', { method: 'POST' })
+      const data = await res.json()
+      if (data.followed) {
+        await refreshProfile()
+        toast.success('友だち登録を確認しました！')
+      } else {
+        toast.error('まだ友だち追加されていません。公式アカウントを友だち追加してください。')
+      }
+    } catch {
+      toast.error('確認に失敗しました')
+    }
+    setIsCheckingFollow(false)
   }
 
   const handleSaveName = async () => {
@@ -161,7 +184,8 @@ export default function SettingsPage() {
         {/* LINE */}
         <div className="space-y-4">
           <h2 className="text-sm font-semibold text-muted-foreground">LINE連携</h2>
-          {profile?.line_user_id ? (
+          {profile?.line_user_id && profile?.line_followed ? (
+            // 完全連携済み
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
                 <MessageCircle className="h-4 w-4" />
@@ -171,7 +195,46 @@ export default function SettingsPage() {
                 連携を解除
               </Button>
             </div>
+          ) : profile?.line_user_id && !profile?.line_followed ? (
+            // OAuth連携済み・友だち未登録
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-yellow-600 dark:text-yellow-400">
+                <AlertTriangle className="h-4 w-4" />
+                LINE連携済み（友だち追加が必要）
+              </div>
+              <p className="text-sm text-muted-foreground">
+                通知を受け取るには、公式アカウントを友だち追加してください。
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  asChild
+                  className="bg-[#06C755] hover:bg-[#05b34d] text-white"
+                  size="sm"
+                >
+                  <a
+                    href={`https://line.me/R/ti/p/${process.env.NEXT_PUBLIC_LINE_BOT_BASIC_ID}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    友だち追加
+                  </a>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCheckFollow}
+                  disabled={isCheckingFollow}
+                >
+                  {isCheckingFollow ? '確認中...' : '友だち追加を確認'}
+                </Button>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowUnlinkLine(true)}>
+                連携を解除
+              </Button>
+            </div>
           ) : (
+            // 未連携
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">LINEと連携すると、グループメンバーからの台通知をLINEで受け取れます。</p>
               <Button onClick={handleLinkLine} className="bg-[#06C755] hover:bg-[#05b34d] text-white">

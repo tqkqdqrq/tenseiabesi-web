@@ -46,6 +46,22 @@ export async function GET(request: NextRequest) {
 
     const lineProfile = await profileRes.json()
 
+    // 友だち登録チェック（Messaging API Bot Profile）
+    let lineFollowed = false
+    try {
+      const botProfileRes = await fetch(
+        `https://api.line.me/v2/bot/profile/${lineProfile.userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.LINE_MESSAGING_CHANNEL_TOKEN}`,
+          },
+        }
+      )
+      lineFollowed = botProfileRes.ok
+    } catch {
+      // ネットワークエラー時はfalseのまま
+    }
+
     // Service role clientでprofilesを更新（RLSをバイパス）
     const supabase = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,7 +70,7 @@ export async function GET(request: NextRequest) {
 
     const { error: dbError } = await supabase
       .from('profiles')
-      .update({ line_user_id: lineProfile.userId })
+      .update({ line_user_id: lineProfile.userId, line_followed: lineFollowed })
       .eq('id', state)
 
     if (dbError) {
@@ -62,7 +78,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/settings?line=error&step=db', request.url))
     }
 
-    return NextResponse.redirect(new URL('/settings?line=success', request.url))
+    if (lineFollowed) {
+      return NextResponse.redirect(new URL('/settings?line=success', request.url))
+    } else {
+      return NextResponse.redirect(new URL('/settings?line=need_follow', request.url))
+    }
   } catch (e) {
     console.error('LINE callback error:', e)
     return NextResponse.redirect(new URL('/settings?line=error&step=catch', request.url))

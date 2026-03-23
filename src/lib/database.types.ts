@@ -278,6 +278,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          line_followed: boolean
           line_user_id: string | null
           mode: string
           plan: string
@@ -287,6 +288,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id: string
+          line_followed?: boolean
           line_user_id?: string | null
           mode?: string
           plan?: string
@@ -296,6 +298,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          line_followed?: boolean
           line_user_id?: string | null
           mode?: string
           plan?: string
