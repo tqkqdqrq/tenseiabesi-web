@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import { BottomNav } from '@/components/layout/bottom-nav'
+import { GlobalPresenceProvider } from '@/components/providers/global-presence-provider'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -57,6 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <GlobalPresenceProvider>
     <div className="min-h-screen flex overflow-x-hidden max-w-[100vw]">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:w-56 md:flex-col md:border-r bg-card">
@@ -106,5 +108,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </DialogContent>
       </Dialog>
     </div>
+    </GlobalPresenceProvider>
   )
 }

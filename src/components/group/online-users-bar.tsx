@@ -5,15 +5,21 @@ import type { PresenceUser } from '@/lib/types'
 
 interface OnlineUsersBarProps {
   users: PresenceUser[]
+  globalOnlineCount?: number
 }
 
-export function OnlineUsersBar({ users }: OnlineUsersBarProps) {
-  if (users.length === 0) return null
+export function OnlineUsersBar({ users, globalOnlineCount }: OnlineUsersBarProps) {
+  if (users.length === 0 && !globalOnlineCount) return null
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto px-1 py-1">
       <Circle className="h-2 w-2 fill-green-500 text-green-500 shrink-0" />
-      <span className="text-xs text-muted-foreground shrink-0">オンライン:</span>
+      <span className="text-xs text-muted-foreground shrink-0">
+        オンライン:
+        {globalOnlineCount != null && (
+          <span className="ml-1 text-muted-foreground">（全体: {globalOnlineCount}人）</span>
+        )}
+      </span>
       {users.map(user => (
         <span key={user.user_id} className="text-xs font-medium shrink-0 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full px-2 py-0.5">
           {user.display_name}

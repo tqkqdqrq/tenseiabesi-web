@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useGroupData } from '@/hooks/use-group-data'
 import { usePresence } from '@/hooks/use-presence'
+import { useGlobalPresenceCount } from '@/components/providers/global-presence-provider'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { useGroups } from '@/hooks/use-groups'
 import { StoreBar } from '@/components/personal/store-bar'
@@ -34,6 +35,7 @@ export default function GroupDetailPage() {
   const gd = useGroupData(user?.id)
   const groupsHook = useGroups(user?.id)
   const { onlineUsers } = usePresence({ groupId, userId: user?.id, displayName: profile?.display_name })
+  const { globalOnlineCount } = useGlobalPresenceCount()
 
   const [group, setGroup] = useState<SlotGroup | null>(null)
   const [showAddStore, setShowAddStore] = useState(false)
@@ -311,6 +313,10 @@ export default function GroupDetailPage() {
             </Popover>
           )}
           <div className="flex-1" />
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+            全体 {globalOnlineCount}人
+          </span>
           <button
             className="flex items-center gap-1 px-1.5 py-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
             onClick={toggleHeader}
@@ -330,7 +336,7 @@ export default function GroupDetailPage() {
         {headerOpen && (
           <>
             <div className="space-y-3 pt-2 pb-1">
-              <OnlineUsersBar users={onlineUsers} />
+              <OnlineUsersBar users={onlineUsers} globalOnlineCount={globalOnlineCount} />
 
               {gd.stores.length > 0 && (
                 <>

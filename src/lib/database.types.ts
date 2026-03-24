@@ -278,6 +278,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          last_active_at: string
           line_followed: boolean
           line_user_id: string | null
           mode: string
@@ -288,6 +289,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id: string
+          last_active_at?: string
           line_followed?: boolean
           line_user_id?: string | null
           mode?: string
@@ -298,6 +300,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          last_active_at?: string
           line_followed?: boolean
           line_user_id?: string | null
           mode?: string
@@ -344,6 +347,7 @@ export type Database = {
     }
     Functions: {
       generate_invite_code: { Args: Record<PropertyKey, never>; Returns: string }
+      get_active_user_count: { Args: Record<PropertyKey, never>; Returns: number }
       is_approved_member: { Args: { p_group_id: string }; Returns: boolean }
       is_group_leader: { Args: { p_group_id: string }; Returns: boolean }
       join_group_by_code: { Args: { p_invite_code: string }; Returns: Json }
