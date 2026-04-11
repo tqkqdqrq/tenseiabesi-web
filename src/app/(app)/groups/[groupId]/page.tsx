@@ -8,6 +8,7 @@ import { usePresence } from '@/hooks/use-presence'
 import { useGlobalPresenceCount } from '@/components/providers/global-presence-provider'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { useGroups } from '@/hooks/use-groups'
+import { useGroupTags } from '@/hooks/use-group-tags'
 import { StoreBar } from '@/components/personal/store-bar'
 import { MachineInputBar } from '@/components/personal/machine-input-bar'
 import { GroupMachineList } from '@/components/group/group-machine-list'
@@ -16,13 +17,13 @@ import { AddStoreDialog } from '@/components/shared/add-store-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { CreateGroupDialog } from '@/components/group/create-group-dialog'
 import { JoinGroupDialog } from '@/components/group/join-group-dialog'
-import { NotifyDialog } from '@/components/group/notify-dialog'
+import { PushNotifyDialog } from '@/components/group/push-notify-dialog'
 import { EmptyState } from '@/components/shared/empty-state'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Settings, Building2, Database, ChevronDown, ChevronUp, Users, Hash, Check, Plus, LogIn, MessageCircle } from 'lucide-react'
+import { Settings, Building2, Database, ChevronDown, ChevronUp, Users, Hash, Check, Plus, LogIn } from 'lucide-react'
 import type { SlotGroup, MachineChange, MachineChangeType, GroupMachineWithProfiles } from '@/lib/types'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import Link from 'next/link'
@@ -34,6 +35,7 @@ export default function GroupDetailPage() {
   const { user, profile } = useAuth()
   const gd = useGroupData(user?.id)
   const groupsHook = useGroups(user?.id)
+  const { tags, fetchTags } = useGroupTags()
   const { onlineUsers } = usePresence({ groupId, userId: user?.id, displayName: profile?.display_name })
   const { globalOnlineCount } = useGlobalPresenceCount()
 
@@ -47,8 +49,7 @@ export default function GroupDetailPage() {
   const [storeSwitcherOpen, setStoreSwitcherOpen] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
-  const [notifyMachine, setNotifyMachine] = useState<string | null>(null)
-  const [showLineHelp, setShowLineHelp] = useState(false)
+  const [pushNotifyMachine, setPushNotifyMachine] = useState<string | null>(null)
 
   const supabase = getSupabaseBrowserClient()
   const broadcastChannelRef = useRef<RealtimeChannel | null>(null)
@@ -66,13 +67,6 @@ export default function GroupDetailPage() {
     localStorage.setItem('lastGroupId', groupId)
   }, [groupId])
 
-  // LINE通知の初回説明
-  useEffect(() => {
-    const seen = localStorage.getItem('lineNotifyHelpSeen')
-    if (!seen) {
-      setShowLineHelp(true)
-    }
-  }, [])
 
   // Header open/close persistence
   useEffect(() => {
@@ -103,9 +97,10 @@ export default function GroupDetailPage() {
     groupsHook.fetchGroups()
   }, [groupId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch stores
+  // Fetch stores & tags
   useEffect(() => {
     gd.fetchStores(groupId)
+    fetchTags(groupId)
   }, [groupId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch machines when store changes
@@ -390,13 +385,14 @@ export default function GroupDetailPage() {
         ) : (
           <GroupMachineList
             machines={gd.machines}
+            tags={tags}
             highlightedMachines={gd.highlightedMachines}
             onStatusChange={handleStatusChange}
             onCountChange={handleCountChange}
             onMemoChange={handleMemoChange}
             onDelete={handleDelete}
             onReorder={handleReorder}
-            onNotify={machineNumber => setNotifyMachine(machineNumber)}
+            onPushNotify={machineNumber => setPushNotifyMachine(machineNumber)}
           />
         )}
       </div>
@@ -434,45 +430,15 @@ export default function GroupDetailPage() {
         error={groupsHook.error}
         success={groupsHook.successMessage}
       />
-      {notifyMachine && (
-        <NotifyDialog
-          open={!!notifyMachine}
-          onOpenChange={open => { if (!open) setNotifyMachine(null) }}
-          machineNumber={notifyMachine}
+      {pushNotifyMachine && (
+        <PushNotifyDialog
+          open={!!pushNotifyMachine}
+          onOpenChange={open => { if (!open) setPushNotifyMachine(null) }}
+          machineNumber={pushNotifyMachine}
           storeName={gd.selectedStore?.name ?? ''}
           groupId={groupId}
         />
       )}
-      <Dialog open={showLineHelp} onOpenChange={setShowLineHelp}>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>LINE通知機能が追加されました</DialogTitle>
-            <DialogDescription>
-              グループメンバーにLINEで台の情報を通知できるようになりました。
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 text-sm">
-            <div className="flex items-start gap-2">
-              <MessageCircle className="h-4 w-4 mt-0.5 shrink-0 text-[#06C755]" />
-              <p>台データの <span className="font-medium text-[#06C755]">LINEアイコン</span> をタップすると、メッセージタイプを選んで通知を送信できます。</p>
-            </div>
-            <div className="space-y-1 text-muted-foreground">
-              <p>🟢 <span className="font-medium">台空き</span> — 空き台の情報を共有</p>
-              <p>📊 <span className="font-medium">現状共有</span> — 現在の状況を報告</p>
-              <p>⚠️ <span className="font-medium">要注意</span> — 注意が必要な台を共有</p>
-              <p>✏️ <span className="font-medium">カスタム</span> — 自由なメッセージ</p>
-            </div>
-            <p className="text-muted-foreground">通知回数: Free 3回/日、Pro 10回/日</p>
-            <p className="text-muted-foreground">※ 設定ページでLINE連携が必要です。</p>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => {
-              localStorage.setItem('lineNotifyHelpSeen', '1')
-              setShowLineHelp(false)
-            }} className="w-full">OK</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

@@ -19,8 +19,17 @@ export type GroupMemberWithProfile = GroupMember & {
   profile: Profile | null
 }
 
-// Status
-export type MachineStatus = '未確認' | 'あり' | 'なし' | 'エナ'
+// Status (動的: group_tagsから取得)
+export type MachineStatus = string
+
+// Group Tag
+export interface GroupTag {
+  id: string
+  group_id: string
+  label: string
+  color: string
+  sort_order: number
+}
 
 // Broadcast payload
 export type MachineChangeType =

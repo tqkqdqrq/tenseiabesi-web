@@ -160,6 +160,41 @@ export type Database = {
           },
         ]
       }
+      group_tags: {
+        Row: {
+          color: string
+          created_at: string
+          group_id: string
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          group_id: string
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_tags_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       line_notifications: {
         Row: {
           id: string

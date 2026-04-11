@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
-interface NotifyDialogProps {
+interface PushNotifyDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   machineNumber: string
@@ -21,10 +22,11 @@ const MESSAGE_TYPES = [
   { value: 'custom', label: 'カスタム', emoji: '✏️' },
 ] as const
 
-export function NotifyDialog({ open, onOpenChange, machineNumber, storeName, groupId }: NotifyDialogProps) {
+export function PushNotifyDialog({ open, onOpenChange, machineNumber, storeName, groupId }: PushNotifyDialogProps) {
   const [selectedType, setSelectedType] = useState<string | null>(null)
   const [customMessage, setCustomMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const supabase = getSupabaseBrowserClient()
 
   const handleSend = async () => {
     if (!selectedType) return
@@ -32,9 +34,20 @@ export function NotifyDialog({ open, onOpenChange, machineNumber, storeName, gro
 
     setIsSending(true)
     try {
-      const res = await fetch('/api/line/notify', {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        toast.error('認証が必要です')
+        setIsSending(false)
+        return
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/push-notify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
         body: JSON.stringify({
           groupId,
           machineNumber,
@@ -47,16 +60,15 @@ export function NotifyDialog({ open, onOpenChange, machineNumber, storeName, gro
       const data = await res.json()
 
       if (res.ok) {
-        const remainingText = data.remaining !== undefined ? `（残り${data.remaining}回）` : ''
-        toast.success(`${data.sentTo}人に通知を送信しました${remainingText}`)
+        toast.success(`${data.sentTo}人にプッシュ通知を送信しました`)
         onOpenChange(false)
         setSelectedType(null)
         setCustomMessage('')
       } else {
-        toast.error(data.error || '通知の送信に失敗しました')
+        toast.error(data.error || 'プッシュ通知の送信に失敗しました')
       }
     } catch {
-      toast.error('通知の送信に失敗しました')
+      toast.error('プッシュ通知の送信に失敗しました')
     }
     setIsSending(false)
   }
@@ -65,7 +77,7 @@ export function NotifyDialog({ open, onOpenChange, machineNumber, storeName, gro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>LINE通知 - 台番号{machineNumber}</DialogTitle>
+          <DialogTitle>プッシュ通知 - 台番号{machineNumber}</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-2">

@@ -1,26 +1,31 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, GripVertical, Trash2 } from 'lucide-react'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { ChevronUp, ChevronDown, Trash2, Bell } from 'lucide-react'
 import { StatusPicker } from '@/components/shared/status-picker'
-import type { GroupMachineWithProfiles, MachineStatus, HighlightInfo } from '@/lib/types'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import type { GroupMachineWithProfiles, MachineStatus, HighlightInfo, GroupTag } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface GroupMachineRowProps {
   machine: GroupMachineWithProfiles
+  tags?: GroupTag[]
   highlightInfo?: HighlightInfo
   onStatusChange: (status: MachineStatus) => void
   onCountChange: (count: number) => void
   onMemoChange: (memo: string) => void
   onDelete: () => void
-  onNotify?: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  isFirst?: boolean
+  isLast?: boolean
+  onPushNotify?: () => void
 }
 
-export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCountChange, onMemoChange, onDelete, onNotify }: GroupMachineRowProps) {
+export function GroupMachineRow({ machine, tags = [], highlightInfo, onStatusChange, onCountChange, onMemoChange, onDelete, onMoveUp, onMoveDown, isFirst, isLast, onPushNotify }: GroupMachineRowProps) {
   const [countText, setCountText] = useState(machine.first_hit_count === 0 ? '' : String(machine.first_hit_count))
   const [memoText, setMemoText] = useState(machine.memo)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const countRef = useRef<HTMLInputElement>(null)
   const memoRef = useRef<HTMLInputElement>(null)
   const isHighlighted = !!highlightInfo
@@ -51,16 +56,10 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
     }
   }
 
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: machine.id })
-  const style = { transform: CSS.Transform.toString(transform), transition }
-
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={cn(
         'relative flex items-start gap-2 rounded-xl p-3 bg-card border shadow-sm transition-all overflow-hidden min-w-0 select-none [&_input]:select-auto',
-        isDragging && 'opacity-50',
         isHighlighted && 'ring-2 ring-blue-500'
       )}
     >
@@ -73,9 +72,22 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
         </div>
       )}
 
-      <button {...attributes} {...listeners} className="mt-1 cursor-grab text-muted-foreground/50 hover:text-muted-foreground touch-none p-1">
-        <GripVertical className="h-6 w-6" />
-      </button>
+      <div className="flex flex-col gap-0.5 mt-0.5">
+        <button
+          onClick={onMoveUp}
+          disabled={isFirst}
+          className="p-0.5 text-muted-foreground/50 hover:text-muted-foreground disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={isLast}
+          className="p-0.5 text-muted-foreground/50 hover:text-muted-foreground disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
+        >
+          <ChevronDown className="h-5 w-5" />
+        </button>
+      </div>
 
       <div className="flex-1 min-w-0 flex flex-col gap-3">
         {/* Contributor + Last updater */}
@@ -102,15 +114,15 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
             className="flex-1 bg-muted/40 hover:bg-muted/60 focus:bg-muted/80 rounded-md px-3 py-1.5 text-base sm:text-xs text-foreground outline-none placeholder:text-muted-foreground/40 transition-colors min-w-0"
           />
 
-          {/* Notify */}
-          {onNotify && (
-            <button onClick={onNotify} className="p-1.5 text-[#06C755] hover:bg-[#06C755]/10 rounded-md transition-colors shrink-0">
-              <MessageCircle className="h-4 w-4" />
+          {/* Push Notify */}
+          {onPushNotify && (
+            <button onClick={onPushNotify} className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors shrink-0" title="プッシュ通知">
+              <Bell className="h-4 w-4" />
             </button>
           )}
 
           {/* Delete */}
-          <button onClick={onDelete} className="p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0">
+          <button onClick={() => setDeleteConfirmOpen(true)} className="p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0">
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
@@ -118,7 +130,7 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
         {/* Bottom Row: StatusPicker (Left) | Hit Counter (Right) */}
         <div className="flex items-end justify-between gap-3">
           {/* Status */}
-          <StatusPicker status={machine.status} onChange={onStatusChange} />
+          <StatusPicker status={machine.status} tags={tags} onChange={onStatusChange} />
 
           {/* First hit count */}
           <div className="flex flex-col items-center gap-1.5 bg-muted/20 p-1.5 rounded-xl border border-border/40 shadow-sm grow sm:grow-0 max-w-[180px]">
@@ -168,6 +180,16 @@ export function GroupMachineRow({ machine, highlightInfo, onStatusChange, onCoun
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="台の削除"
+        description="この台を削除しますか？"
+        confirmLabel="削除"
+        variant="destructive"
+        onConfirm={onDelete}
+      />
     </div>
   )
 }

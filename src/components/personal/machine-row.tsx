@@ -1,24 +1,28 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { GripVertical, Trash2 } from 'lucide-react'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { StatusPicker } from '@/components/shared/status-picker'
-import type { Machine, MachineStatus } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import type { Machine, MachineStatus, GroupTag } from '@/lib/types'
 
 interface MachineRowProps {
   machine: Machine
+  tags?: GroupTag[]
   onStatusChange: (status: MachineStatus) => void
   onCountChange: (count: number) => void
   onMemoChange: (memo: string) => void
   onDelete: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  isFirst?: boolean
+  isLast?: boolean
 }
 
-export function MachineRow({ machine, onStatusChange, onCountChange, onMemoChange, onDelete }: MachineRowProps) {
+export function MachineRow({ machine, tags = [], onStatusChange, onCountChange, onMemoChange, onDelete, onMoveUp, onMoveDown, isFirst, isLast }: MachineRowProps) {
   const [countText, setCountText] = useState(machine.first_hit_count === 0 ? '' : String(machine.first_hit_count))
   const [memoText, setMemoText] = useState(machine.memo)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const countRef = useRef<HTMLInputElement>(null)
   const memoRef = useRef<HTMLInputElement>(null)
 
@@ -48,36 +52,26 @@ export function MachineRow({ machine, onStatusChange, onCountChange, onMemoChang
     }
   }
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: machine.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        'flex items-start gap-2 rounded-xl p-3 bg-card border shadow-sm overflow-hidden min-w-0 select-none [&_input]:select-auto',
-        isDragging && 'opacity-50'
-      )}
+      className="flex items-start gap-2 rounded-xl p-3 bg-card border shadow-sm overflow-hidden min-w-0 select-none [&_input]:select-auto"
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="mt-1 cursor-grab text-muted-foreground/50 hover:text-muted-foreground touch-none p-1"
-      >
-        <GripVertical className="h-6 w-6" />
-      </button>
+      <div className="flex flex-col gap-0.5 mt-0.5">
+        <button
+          onClick={onMoveUp}
+          disabled={isFirst}
+          className="p-0.5 text-muted-foreground/50 hover:text-muted-foreground disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={isLast}
+          className="p-0.5 text-muted-foreground/50 hover:text-muted-foreground disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
+        >
+          <ChevronDown className="h-5 w-5" />
+        </button>
+      </div>
 
       <div className="flex-1 min-w-0 flex flex-col gap-3">
         {/* Top Row: Machine Number + Memo + Delete */}
@@ -97,7 +91,7 @@ export function MachineRow({ machine, onStatusChange, onCountChange, onMemoChang
           />
 
           {/* Delete */}
-          <button onClick={onDelete} className="p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0">
+          <button onClick={() => setDeleteConfirmOpen(true)} className="p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0">
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
@@ -105,7 +99,7 @@ export function MachineRow({ machine, onStatusChange, onCountChange, onMemoChang
         {/* Bottom Row: StatusPicker (Left) | Hit Counter (Right) */}
         <div className="flex items-end justify-between gap-3">
           {/* Status */}
-          <StatusPicker status={machine.status} onChange={onStatusChange} />
+          <StatusPicker status={machine.status} tags={tags} onChange={onStatusChange} />
 
           {/* First hit count */}
           <div className="flex flex-col items-center gap-1.5 bg-muted/20 p-1.5 rounded-xl border border-border/40 shadow-sm grow sm:grow-0 max-w-[180px]">
@@ -155,6 +149,16 @@ export function MachineRow({ machine, onStatusChange, onCountChange, onMemoChang
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="台の削除"
+        description="この台を削除しますか？"
+        confirmLabel="削除"
+        variant="destructive"
+        onConfirm={onDelete}
+      />
     </div>
   )
 }

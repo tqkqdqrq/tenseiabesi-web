@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useGroupMembers } from '@/hooks/use-group-members'
 import { useGroups } from '@/hooks/use-groups'
+import { useGroupTags } from '@/hooks/use-group-tags'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { InviteCodeDisplay } from '@/components/group/invite-code-display'
 import { MemberList } from '@/components/group/member-list'
@@ -25,12 +26,15 @@ export default function GroupSettingsPage() {
   const { user, profile } = useAuth()
   const membersHook = useGroupMembers()
   const groupsHook = useGroups(user?.id)
+  const tagsHook = useGroupTags()
   const [group, setGroup] = useState<SlotGroup | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
   const [showDeleteGroup, setShowDeleteGroup] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [nameText, setNameText] = useState('')
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState('#007AFF')
   const supabase = getSupabaseBrowserClient()
 
   useEffect(() => {
@@ -41,6 +45,7 @@ export default function GroupSettingsPage() {
     fetch()
     membersHook.fetchMembers(groupId)
     groupsHook.fetchGroups()
+    tagsHook.fetchTags(groupId)
   }, [groupId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSaveName = async () => {
@@ -168,6 +173,66 @@ export default function GroupSettingsPage() {
               onRemove={membersHook.removeMember}
             />
           )}
+        </div>
+
+        {/* Tags */}
+        <Separator />
+        <div>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-2">カスタムタグ</h2>
+          {tagsHook.error && <p className="text-sm text-destructive mb-2">{tagsHook.error}</p>}
+          <div className="rounded-lg border divide-y mb-3">
+            {tagsHook.tags.length === 0 ? (
+              <p className="px-3 py-2.5 text-sm text-muted-foreground">タグがありません</p>
+            ) : (
+              tagsHook.tags.map(tag => (
+                <div key={tag.id} className="flex items-center px-3 py-2.5 gap-2">
+                  <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                  <span className="text-sm font-medium flex-1">{tag.label}</span>
+                  {group.leader_id === user?.id && (
+                    <button
+                      onClick={() => tagsHook.deleteTag(tag.id)}
+                      className="p-1 text-muted-foreground/40 hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+          {group.leader_id === user?.id && (
+            <div className="flex items-center gap-2">
+              <Input
+                value={newTagName}
+                onChange={e => setNewTagName(e.target.value)}
+                placeholder="タグ名"
+                className="flex-1 text-sm"
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && newTagName.trim()) {
+                    tagsHook.addTag(groupId, newTagName, newTagColor)
+                    setNewTagName('')
+                  }
+                }}
+              />
+              <input
+                type="color"
+                value={newTagColor}
+                onChange={e => setNewTagColor(e.target.value)}
+                className="h-9 w-9 rounded border cursor-pointer shrink-0"
+              />
+              <Button
+                size="sm"
+                disabled={!newTagName.trim() || tagsHook.tags.length >= 10}
+                onClick={() => {
+                  tagsHook.addTag(groupId, newTagName, newTagColor)
+                  setNewTagName('')
+                }}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">最大10個（{tagsHook.tags.length}/10）</p>
         </div>
 
         {/* Delete group (leader only) */}

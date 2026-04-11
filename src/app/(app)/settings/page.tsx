@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useTheme } from 'next-themes'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -10,22 +11,23 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Moon, Sun, LogOut, Sparkles, User, Users, MessageCircle, AlertTriangle, ExternalLink } from 'lucide-react'
+import { Moon, Sun, LogOut, Sparkles, User, Users, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function SettingsPage() {
   const { user, profile, signOut, refreshProfile } = useAuth()
   const { theme, setTheme } = useTheme()
   const supabase = getSupabaseBrowserClient()
+  const router = useRouter()
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
   const [isSaving, setIsSaving] = useState(false)
   const [showLogout, setShowLogout] = useState(false)
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [secretCode, setSecretCode] = useState('')
   const [isActivating, setIsActivating] = useState(false)
   const [showModeHelp, setShowModeHelp] = useState(false)
-  const [showUnlinkLine, setShowUnlinkLine] = useState(false)
-  const [isCheckingFollow, setIsCheckingFollow] = useState(false)
 
   useEffect(() => {
     const seen = localStorage.getItem('modeHelpSeen')
@@ -40,61 +42,6 @@ export default function SettingsPage() {
       setDisplayName(profile.display_name)
     }
   }, [profile?.display_name])
-
-  // LINE連携コールバック結果の処理
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const lineResult = params.get('line')
-    if (lineResult === 'success') {
-      refreshProfile()
-      toast.success('LINE連携が完了しました')
-      window.history.replaceState({}, '', '/settings')
-    } else if (lineResult === 'need_follow') {
-      refreshProfile()
-      toast.warning('LINE連携しました。公式アカウントの友だち追加も行ってください。')
-      window.history.replaceState({}, '', '/settings')
-    } else if (lineResult === 'error') {
-      toast.error('LINE連携に失敗しました')
-      window.history.replaceState({}, '', '/settings')
-    }
-  }, [refreshProfile])
-
-  const handleLinkLine = () => {
-    if (!user) return
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: process.env.NEXT_PUBLIC_LINE_LOGIN_CHANNEL_ID!,
-      redirect_uri: `${window.location.origin}/api/line/callback`,
-      state: user.id,
-      scope: 'profile openid',
-      bot_prompt: 'aggressive',
-    })
-    window.location.href = `https://access.line.me/oauth2/v2.1/authorize?${params}`
-  }
-
-  const handleUnlinkLine = async () => {
-    if (!user) return
-    await supabase.from('profiles').update({ line_user_id: null, line_followed: false }).eq('id', user.id)
-    await refreshProfile()
-    toast.success('LINE連携を解除しました')
-  }
-
-  const handleCheckFollow = async () => {
-    setIsCheckingFollow(true)
-    try {
-      const res = await fetch('/api/line/check-follow', { method: 'POST' })
-      const data = await res.json()
-      if (data.followed) {
-        await refreshProfile()
-        toast.success('友だち登録を確認しました！')
-      } else {
-        toast.error('まだ友だち追加されていません。公式アカウントを友だち追加してください。')
-      }
-    } catch {
-      toast.error('確認に失敗しました')
-    }
-    setIsCheckingFollow(false)
-  }
 
   const handleSaveName = async () => {
     const trimmed = displayName.trim()
@@ -113,37 +60,43 @@ export default function SettingsPage() {
     setIsSaving(false)
   }
 
-  const handleActivatePro = async () => {
+  const handleActivateMembership = async () => {
     if (!user) return
-    if (secretCode !== 'Tensei20260225') {
-      toast.error('コードが正しくありません')
-      return
-    }
     setIsActivating(true)
     try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ plan: 'pro' })
-        .eq('id', user.id)
-      if (profileError) throw profileError
-
-      const { error: groupsError } = await supabase
-        .from('groups')
-        .update({ max_members: 999 })
-        .eq('leader_id', user.id)
-      if (groupsError) throw groupsError
-
-      await refreshProfile()
-      setSecretCode('')
-      toast.success('Pro版を解放しました！')
+      const { data, error } = await (supabase.rpc as any)('activate_membership', { p_code: secretCode.trim() })
+      if (error) throw error
+      if (data?.success) {
+        await refreshProfile()
+        setSecretCode('')
+        toast.success('塾メンバー認証が完了しました！')
+      } else {
+        toast.error(data?.error || 'コードが正しくありません')
+      }
     } catch {
-      toast.error('Pro版の解放に失敗しました')
+      toast.error('認証に失敗しました')
     }
     setIsActivating(false)
   }
 
   const handleLogout = async () => {
     await signOut()
+  }
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true)
+    try {
+      const res = await fetch('/api/account/delete', { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'エラーが発生しました')
+      }
+      await supabase.auth.signOut()
+      router.push('/login')
+    } catch (e: any) {
+      toast.error(e.message || 'アカウント削除に失敗しました')
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -177,72 +130,6 @@ export default function SettingsPage() {
             <Label>メールアドレス</Label>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
-        </div>
-
-        <Separator />
-
-        {/* LINE */}
-        <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground">LINE連携</h2>
-          {profile?.line_user_id && profile?.line_followed ? (
-            // 完全連携済み
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
-                <MessageCircle className="h-4 w-4" />
-                LINE連携済み
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setShowUnlinkLine(true)}>
-                連携を解除
-              </Button>
-            </div>
-          ) : profile?.line_user_id && !profile?.line_followed ? (
-            // OAuth連携済み・友だち未登録
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-yellow-600 dark:text-yellow-400">
-                <AlertTriangle className="h-4 w-4" />
-                LINE連携済み（友だち追加が必要）
-              </div>
-              <p className="text-sm text-muted-foreground">
-                通知を受け取るには、公式アカウントを友だち追加してください。
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  asChild
-                  className="bg-[#06C755] hover:bg-[#05b34d] text-white"
-                  size="sm"
-                >
-                  <a
-                    href={`https://line.me/R/ti/p/${process.env.NEXT_PUBLIC_LINE_BOT_BASIC_ID}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    友だち追加
-                  </a>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCheckFollow}
-                  disabled={isCheckingFollow}
-                >
-                  {isCheckingFollow ? '確認中...' : '友だち追加を確認'}
-                </Button>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setShowUnlinkLine(true)}>
-                連携を解除
-              </Button>
-            </div>
-          ) : (
-            // 未連携
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">LINEと連携すると、グループメンバーからの台通知をLINEで受け取れます。</p>
-              <Button onClick={handleLinkLine} className="bg-[#06C755] hover:bg-[#05b34d] text-white">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                LINEと連携する
-              </Button>
-            </div>
-          )}
         </div>
 
         <Separator />
@@ -316,29 +203,29 @@ export default function SettingsPage() {
 
         {/* Plan */}
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground">プラン</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground">塾メンバー限定</h2>
           {profile?.plan === 'pro' ? (
             <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
               <Sparkles className="h-4 w-4" />
-              Pro版 解放済み
+              塾メンバー 認証済み
             </div>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="secret-code">ヒミツのコード</Label>
+              <Label htmlFor="member-code">メンバーコード</Label>
               <div className="flex gap-2">
                 <Input
-                  id="secret-code"
+                  id="member-code"
                   type="text"
                   placeholder="コードを入力"
                   value={secretCode}
                   onChange={e => setSecretCode(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleActivatePro()}
+                  onKeyDown={e => e.key === 'Enter' && handleActivateMembership()}
                 />
                 <Button
-                  onClick={handleActivatePro}
+                  onClick={handleActivateMembership}
                   disabled={isActivating || !secretCode.trim()}
                 >
-                  {isActivating ? '処理中...' : '解放'}
+                  {isActivating ? '処理中...' : '認証'}
                 </Button>
               </div>
             </div>
@@ -352,16 +239,26 @@ export default function SettingsPage() {
           <LogOut className="h-4 w-4 mr-2" />
           ログアウト
         </Button>
+
+        <Separator />
+
+        {/* Delete Account */}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。
+          </p>
+          <Button
+            variant="outline"
+            className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+            onClick={() => setShowDeleteAccount(true)}
+            disabled={isDeleting}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {isDeleting ? '削除中...' : 'アカウントを削除'}
+          </Button>
+        </div>
       </div>
 
-      <ConfirmDialog
-        open={showUnlinkLine}
-        onOpenChange={setShowUnlinkLine}
-        title="LINE連携解除"
-        description="LINE連携を解除しますか？グループからのLINE通知が届かなくなります。"
-        confirmLabel="解除"
-        onConfirm={handleUnlinkLine}
-      />
       <ConfirmDialog
         open={showLogout}
         onOpenChange={setShowLogout}
@@ -369,6 +266,15 @@ export default function SettingsPage() {
         description="ログアウトしますか？"
         confirmLabel="ログアウト"
         onConfirm={handleLogout}
+      />
+
+      <ConfirmDialog
+        open={showDeleteAccount}
+        onOpenChange={setShowDeleteAccount}
+        title="アカウント削除"
+        description="本当にアカウントを削除しますか？すべてのデータが完全に削除され、この操作は元に戻せません。"
+        confirmLabel="削除する"
+        onConfirm={handleDeleteAccount}
       />
 
       <Dialog open={showModeHelp} onOpenChange={setShowModeHelp}>
