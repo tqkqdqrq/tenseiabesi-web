@@ -1,11 +1,11 @@
 'use client'
 
-import type { GroupTag } from '@/lib/types'
+import type { DisplayTag } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface StatusPickerProps {
   status: string
-  tags: GroupTag[]
+  tags: DisplayTag[]
   onChange: (status: string) => void
 }
 
@@ -32,7 +32,7 @@ export function StatusPicker({ status, tags, onChange }: StatusPickerProps) {
   )
 }
 
-function TagButton({ tag, isActive, onClick }: { tag: GroupTag; isActive: boolean; onClick: () => void }) {
+function TagButton({ tag, isActive, onClick }: { tag: DisplayTag; isActive: boolean; onClick: () => void }) {
   return (
     <button
       type="button"

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useStores } from '@/hooks/use-stores'
 import { useMachines } from '@/hooks/use-machines'
+import { useUserTags } from '@/hooks/use-user-tags'
 import { StoreBar } from '@/components/personal/store-bar'
 import { MachineInputBar } from '@/components/personal/machine-input-bar'
 import { MachineList } from '@/components/personal/machine-list'
@@ -19,6 +20,7 @@ export default function PersonalPage() {
   const { user } = useAuth()
   const storeHook = useStores(user?.id)
   const machineHook = useMachines(user?.id)
+  const userTagsHook = useUserTags()
   console.log('[PersonalPage] render:', { userId: user?.id, isLoading: storeHook.isLoading, storesCount: storeHook.stores.length, error: storeHook.error })
   const [showAddStore, setShowAddStore] = useState(false)
   const [showDeleteStore, setShowDeleteStore] = useState(false)
@@ -29,6 +31,7 @@ export default function PersonalPage() {
 
   const fetchStores = storeHook.fetchStores
   const fetchMachines = machineHook.fetchMachines
+  const fetchUserTags = userTagsHook.fetchTags
   const selectedStoreId = storeHook.selectedStore?.id
 
   // Blur any focused element on mount to prevent iOS Safari viewport shift
@@ -58,6 +61,10 @@ export default function PersonalPage() {
   useEffect(() => {
     fetchStores()
   }, [fetchStores])
+
+  useEffect(() => {
+    fetchUserTags()
+  }, [fetchUserTags])
 
   useEffect(() => {
     if (selectedStoreId) {
@@ -211,6 +218,7 @@ export default function PersonalPage() {
         ) : (
           <MachineList
             machines={machineHook.machines}
+            tags={userTagsHook.tags}
             onStatusChange={machineHook.updateStatus}
             onCountChange={machineHook.updateFirstHitCount}
             onMemoChange={machineHook.updateMemo}

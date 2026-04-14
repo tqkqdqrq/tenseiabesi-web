@@ -4,11 +4,11 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { StatusPicker } from '@/components/shared/status-picker'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import type { Machine, MachineStatus, GroupTag } from '@/lib/types'
+import type { Machine, MachineStatus, DisplayTag } from '@/lib/types'
 
 interface MachineRowProps {
   machine: Machine
-  tags?: GroupTag[]
+  tags?: DisplayTag[]
   onStatusChange: (status: MachineStatus) => void
   onCountChange: (count: number) => void
   onMemoChange: (memo: string) => void

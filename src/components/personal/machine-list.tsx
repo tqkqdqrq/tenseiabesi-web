@@ -1,10 +1,11 @@
 'use client'
 
 import { MachineRow } from './machine-row'
-import type { Machine, MachineStatus } from '@/lib/types'
+import type { Machine, MachineStatus, DisplayTag } from '@/lib/types'
 
 interface MachineListProps {
   machines: Machine[]
+  tags?: DisplayTag[]
   onStatusChange: (id: string, status: MachineStatus) => void
   onCountChange: (id: string, count: number) => void
   onMemoChange: (id: string, memo: string) => void
@@ -12,13 +13,14 @@ interface MachineListProps {
   onReorder: (oldIndex: number, newIndex: number) => void
 }
 
-export function MachineList({ machines, onStatusChange, onCountChange, onMemoChange, onDelete, onReorder }: MachineListProps) {
+export function MachineList({ machines, tags, onStatusChange, onCountChange, onMemoChange, onDelete, onReorder }: MachineListProps) {
   return (
     <div className="space-y-2">
       {machines.map((machine, i) => (
         <MachineRow
           key={machine.id}
           machine={machine}
+          tags={tags}
           onStatusChange={s => onStatusChange(machine.id, s)}
           onCountChange={c => onCountChange(machine.id, c)}
           onMemoChange={m => onMemoChange(machine.id, m)}

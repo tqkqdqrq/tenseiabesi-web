@@ -31,6 +31,22 @@ export interface GroupTag {
   sort_order: number
 }
 
+// User Tag (個人モード用ステータスタグ)
+export interface UserTag {
+  id: string
+  user_id: string
+  label: string
+  color: string
+  sort_order: number
+}
+
+// StatusPicker が受け取るタグの最小形。GroupTag / UserTag のどちらからでも構造的に渡せる。
+export interface DisplayTag {
+  id: string
+  label: string
+  color: string
+}
+
 // Broadcast payload
 export type MachineChangeType =
   | 'statusUpdated'

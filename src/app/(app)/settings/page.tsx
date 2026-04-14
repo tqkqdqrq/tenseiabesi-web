@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useTheme } from 'next-themes'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { useUserTags } from '@/hooks/use-user-tags'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Moon, Sun, LogOut, Sparkles, User, Users, Trash2 } from 'lucide-react'
+import { Moon, Sun, LogOut, Sparkles, User, Users, Trash2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function SettingsPage() {
@@ -28,6 +29,16 @@ export default function SettingsPage() {
   const [secretCode, setSecretCode] = useState('')
   const [isActivating, setIsActivating] = useState(false)
   const [showModeHelp, setShowModeHelp] = useState(false)
+  const userTagsHook = useUserTags()
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState('#007AFF')
+
+  const fetchUserTags = userTagsHook.fetchTags
+  useEffect(() => {
+    if (profile?.mode === 'personal') {
+      fetchUserTags()
+    }
+  }, [profile?.mode, fetchUserTags])
 
   useEffect(() => {
     const seen = localStorage.getItem('modeHelpSeen')
@@ -198,6 +209,67 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
+
+        {profile?.mode === 'personal' && (
+          <>
+            <Separator />
+
+            {/* Personal status tags */}
+            <div>
+              <h2 className="text-sm font-semibold text-muted-foreground mb-2">ステータスタグ</h2>
+              {userTagsHook.error && <p className="text-sm text-destructive mb-2">{userTagsHook.error}</p>}
+              <div className="rounded-lg border divide-y mb-3">
+                {userTagsHook.tags.length === 0 ? (
+                  <p className="px-3 py-2.5 text-sm text-muted-foreground">タグがありません</p>
+                ) : (
+                  userTagsHook.tags.map(tag => (
+                    <div key={tag.id} className="flex items-center px-3 py-2.5 gap-2">
+                      <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                      <span className="text-sm font-medium flex-1">{tag.label}</span>
+                      <button
+                        onClick={() => userTagsHook.deleteTag(tag.id)}
+                        className="p-1 text-muted-foreground/40 hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newTagName}
+                  onChange={e => setNewTagName(e.target.value)}
+                  placeholder="タグ名"
+                  className="flex-1 text-sm"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && newTagName.trim()) {
+                      userTagsHook.addTag(newTagName, newTagColor)
+                      setNewTagName('')
+                    }
+                  }}
+                />
+                <input
+                  type="color"
+                  value={newTagColor}
+                  onChange={e => setNewTagColor(e.target.value)}
+                  className="h-9 w-9 rounded border cursor-pointer shrink-0"
+                />
+                <Button
+                  size="sm"
+                  disabled={!newTagName.trim() || userTagsHook.tags.length >= 10}
+                  onClick={() => {
+                    userTagsHook.addTag(newTagName, newTagColor)
+                    setNewTagName('')
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">最大10個（{userTagsHook.tags.length}/10）</p>
+            </div>
+          </>
+        )}
 
         <Separator />
 
